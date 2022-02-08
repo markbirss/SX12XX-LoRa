@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 30/12/21
+  Programs for Arduino - Copyright of the author Stuart Robinson - 08/02/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -20,6 +20,8 @@
 #define DISPRESET 25                            //RESET for ILI9341   
 #define TOUCHCS 29                              //ILI9341 may have touch ICs, so we need to disable it, set to -1 if not fitted   
 
+#define DTLED -1                                //pin number for file transfer indicator LED, if -1 then not used
+
 
 //*******  Setup LoRa modem parameters here ! ***************
 const uint32_t Frequency = 434000000;           //frequency of transmissions in hertz
@@ -35,12 +37,7 @@ const int8_t TXpower = 10;                      //LoRa transmit power in dBm
 const uint32_t TXtimeoutmS = 5000;              //mS to wait for TX to complete
 const uint32_t RXtimeoutmS = 60000;             //mS to wait for receiving a packet
 const uint32_t ACKdelaymS = 0;                  //ms delay after packet actioned and ack sent
-const uint32_t ACKsegtimeoutmS = 75;            //mS to wait for receiving an ACK before re-trying transmit segment
-const uint32_t ACKopentimeoutmS = 250;          //mS to wait for receiving an ACK before re-trying transmit file open
-const uint32_t ACKclosetimeoutmS = 250;         //mS to wait for receiving an ACK before re-trying transmit file close
 const uint32_t DuplicatedelaymS = 10;           //ms delay if there has been an duplicate segment or command receipt
-const uint32_t NoAckCountLimit = 250;           //if no NoAckCount exceeds this value - restart transfer
-const uint32_t packetdelaymS = 0;               //mS delay between transmitted packets
 
 const uint8_t HeaderSizeMax = 12;               //max size of header in bytes, minimum size is 7 bytes
 const uint8_t DataSizeMax = 245;                //max size of data array in bytes

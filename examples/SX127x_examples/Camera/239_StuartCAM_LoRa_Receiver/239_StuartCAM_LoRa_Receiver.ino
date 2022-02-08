@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 30/12/21
+  Programs for Arduino - Copyright of the author Stuart Robinson - 08/02/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -14,7 +14,7 @@
   to take an image and then transfers it as a file across to this receiver, when the transfer is complete
   the file, with the original name, is saved as a file on a SD card.
 
-  Program uses an ILI931 TFT display to show progress of the transfer. Arduino DUE was used.
+  Program uses an ILI931 TFT display to show progress of the transfer. Program tested on Arduino DUE.
 
   Serial monitor baud rate is set at 115200.
 *******************************************************************************************************/
@@ -60,8 +60,6 @@ uint16_t DTSegmentNext;                    //next segment expected
 uint16_t DTReceivedSegments;               //count of segments received
 uint16_t DTSegmentLast;                    //last segment processed
 char DTfilenamebuff[DTfilenamesize];
-
-int DTLED = -1;                            //pin number for indicator LED, if -1 then not used
 
 uint8_t DTheader[16];                      //header array
 uint8_t DTdata[245];                       //data/segment array
@@ -549,7 +547,6 @@ void setDTLED(int8_t pinnumber)
 {
   if (pinnumber >= 0)
   {
-    DTLED = pinnumber;
     pinMode(pinnumber, OUTPUT);
   }
 }
@@ -675,6 +672,7 @@ void DTSD_closeFile()
 
 void setCursor(uint8_t lcol, uint8_t lrow)
 {
+  //used for display functions to make setting cursor position easier
   disp.setCursor((lcol * 6 * textscale), (lrow * 9 * textscale));
 }
 

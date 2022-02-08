@@ -291,8 +291,6 @@ bool ARsendArray(uint8_t *ptrarray, uint32_t arraylength, char *filename, uint8_
       continue;
     }
   }
-  //while (!ARDTArrayTransferComplete);
-
   while ((!ARDTArrayTransferComplete) && (localattempts < StartAttempts));
 
   if (localattempts == StartAttempts)
@@ -506,7 +504,7 @@ bool ARsendArraySegment(uint16_t segnum, uint8_t segmentsize)
   do
   {
     localattempts++;
-	if (ARDTLED >= 0)
+    if (ARDTLED >= 0)
     {
       digitalWrite(ARDTLED, HIGH);
     }
@@ -589,11 +587,9 @@ bool ARsendArraySegment(uint16_t segnum, uint8_t segmentsize)
         return false;
       }
     }
-  //} while (ValidACK == 0);
+  } while ((ValidACK == 0) && (localattempts < SendAttempts)) ;
 
-   } while ((ValidACK == 0) && (localattempts < SendAttempts)) ;
-
-if (localattempts == SendAttempts)
+  if (localattempts == SendAttempts)
   {
     bitSet(ARDTErrors, ARSendSegment);
     return false;
@@ -609,7 +605,7 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
 
   uint8_t ValidACK;
   uint8_t localattempts = 0;
-  
+
   ARbuild_DTArrayEndHeader(ARDTheader, DTArrayEndHeaderL, filenamesize, ARDTSourceArrayLength, ARDTSourceArrayCRC, SegmentSize);
 
   do
@@ -648,9 +644,9 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
     {
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
-      Monitorport.print(F("ACK header ")); 
-	  ARprintArrayHEX(ARDTheader, ValidACK);                   //ValidACK is packet length
-	  Monitorport.println();
+      Monitorport.print(F("ACK header "));
+      ARprintArrayHEX(ARDTheader, ValidACK);                   //ValidACK is packet length
+      Monitorport.println();
 #endif
 #endif
     }
@@ -684,13 +680,11 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
   while ((ValidACK == 0) && (localattempts < SendAttempts)) ;
 
 
-if (localattempts == SendAttempts)
+  if (localattempts == SendAttempts)
   {
     bitSet(ARDTErrors, ARSendSegment);
     return false;
   }
-
- 
   return true;
 }
 
@@ -878,17 +872,17 @@ bool ARsendArrayInfo()
     }
 
     localattempts++;
-    #ifdef ENABLEMONITOR
-	Monitorport.print(F("Send DTInfo packet attempt "));
+#ifdef ENABLEMONITOR
+    Monitorport.print(F("Send DTInfo packet attempt "));
     Monitorport.println(localattempts);
-    #endif
-	ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTInfoHeaderL, (uint8_t *) ARDTdata, 0, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
-    
+#endif
+    ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTInfoHeaderL, (uint8_t *) ARDTdata, 0, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+
     if (ARTXPacketL == 0)                                         //if there has been an error ARTXPacketL returns as 0
     {
-      #ifdef ENABLEMONITOR
-	  Monitorport.println(F("Transmit error"));
-	  #endif
+#ifdef ENABLEMONITOR
+      Monitorport.println(F("Transmit error"));
+#endif
       continue;
     }
 
@@ -898,48 +892,45 @@ bool ARsendArrayInfo()
     {
       //ack is a valid relaible packet
       ARRXPacketType = ARDTheader[0];
-      #ifdef ENABLEMONITOR
-	  Monitorport.print(F("ACK Packet type 0x"));
+#ifdef ENABLEMONITOR
+      Monitorport.print(F("ACK Packet type 0x"));
       Monitorport.println(ARRXPacketType, HEX);
-	  #endif
+#endif
 
       if (ARRXPacketType == DTInfoACK)
       {
-        #ifdef ENABLEMONITOR
-		Monitorport.println(F("DTInfoACK received"));
-		#endif
+#ifdef ENABLEMONITOR
+        Monitorport.println(F("DTInfoACK received"));
+#endif
         ARAckCount++;
         ARRXPacketType = ARDTheader[0];
         return true;
       }
       else
       {
-        #ifdef ENABLEMONITOR
-		Monitorport.println(F("DTInfoACK not received"));
-        #endif
-		return false;
+#ifdef ENABLEMONITOR
+        Monitorport.println(F("DTInfoACK not received"));
+#endif
+        return false;
       }
 
     }
     else
     {
       ARNoAckCount++;
-      #ifdef ENABLEMONITOR
-	  Monitorport.println(F("No valid ACK received "));
-      #endif
-      //ARprintReliableStatus();
-      //Monitorport.println();
+#ifdef ENABLEMONITOR
+      Monitorport.println(F("No valid ACK received "));
+#endif
 
       if (ARNoAckCount > NoAckCountLimit)
       {
-        #ifdef ENABLEMONITOR
-		Monitorport.println(F("ERROR NoACK limit reached"));
-        #endif
+#ifdef ENABLEMONITOR
+        Monitorport.println(F("ERROR NoACK limit reached"));
+#endif
         return false;
       }
     }
-	//delay needed here ?
-	delay(PacketDelaymS);
+    delay(PacketDelaymS);
   }
   while ((ValidACK == 0) && (localattempts < SendAttempts));
 
@@ -1008,7 +999,7 @@ uint32_t ARreceiveArray(uint8_t *ptrarray, uint32_t length, uint32_t receivetime
     ARDTArrayTimeout = true;
     return 0;
   }
-  
+
 }
 
 
@@ -1278,10 +1269,9 @@ bool ARprocessArrayStart(uint8_t *buff, uint8_t filenamesize)
 
 #ifdef ENABLEMONITOR
   Monitorport.print((char*) ARDTfilenamebuff);
-  Monitorport.print(F(" Array start write request"));
-  Monitorport.println();
-  Monitorport.print(F("Header > "));
+  Monitorport.println(F(" Array start write request"));
 #ifdef DEBUG
+  Monitorport.print(F("Header > "));
   ARprintArrayHEX(ARDTheader, 16);
 #endif
   Monitorport.println();
@@ -1291,7 +1281,6 @@ bool ARprocessArrayStart(uint8_t *buff, uint8_t filenamesize)
   {
     Monitorport.println(F("Remote did not save file to SD"));
   }
-  //Monitorport.println(F("Sending ACK"));
 #endif
   ARDTStartmS = millis();
   delay(ACKdelaymS);
@@ -1360,11 +1349,6 @@ bool ARprocessArrayEnd()
   }
 
   delay(ACKdelaymS);
-
-//#ifdef ENABLEMONITOR
-  //Monitorport.println(F("Sending ACK"));
-//#endif
-
   ARDTheader[0] = DTArrayEndACK;
 
   if (ARDTLED >= 0)
@@ -1378,11 +1362,6 @@ bool ARprocessArrayEnd()
   {
     digitalWrite(ARDTLED, LOW);
   }
-
-//#ifdef ENABLEMONITOR
-//  Monitorport.println();
-//  Monitorport.println();
-//#endif
 
   ARDTArrayEnded = true;
   return true;

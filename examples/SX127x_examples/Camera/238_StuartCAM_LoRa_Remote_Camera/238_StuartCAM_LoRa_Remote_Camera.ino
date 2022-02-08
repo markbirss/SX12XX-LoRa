@@ -6,7 +6,7 @@
  *******************************************************************************************************/
 
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 16/11/21
+  Programs for Arduino - Copyright of the author Stuart Robinson - 08/02/22
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
 *******************************************************************************************************/
@@ -14,7 +14,7 @@
 /*******************************************************************************************************
   Program Operation - This is a demonstration program that uses LoRa to transfer an image taken with an
   OV2640 camaera. The LoRa transfer is carried out using the data transfer functions of the SX12XX-LoRa
-  library.
+  library. Program tested on Arduino DUE.
 
   The Arducam software taskes an image and saves it to SD card. The filename is then passed across to
   the LoRa library which transfers the file already on SD across to the remote receiver, which is running
@@ -40,7 +40,7 @@ SX127XLT LoRa;                          //create an SX127XLT library instance ca
 #define PRINTSEGMENTNUM                 //enable this define to print segment numbers 
 //#define DEBUG                         //enable this define to print debug info for segment transfers
 //#define DEBUGSD                       //enable this defien to print SD file debug info
-//#define ENABLEFILECRC                 //enable this define to uses and show file CRCs
+#define ENABLEFILECRC                 //enable this define to uses and show file CRCs
 //#define DISABLEPAYLOADCRC             //enable this define if you want to disable payload CRC checking
 
 #define SDLIB                           //DTSDlibrary.h needs to use SD.h

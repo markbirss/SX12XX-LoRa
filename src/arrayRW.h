@@ -4,6 +4,9 @@
   Original published 06/05/21
 */
 
+//To Do
+
+
 uint32_t _arraylcn;
 uint8_t *_arrayaddress;
 
@@ -19,7 +22,9 @@ void beginarrayRW(uint8_t *buff, uint32_t lcn)
 
 uint8_t endarrayRW()
 {
-  return _arraylcn;                              //return the length of the array written
+  //_arraylcn will have incremented by 1 at every write to the array, so to return the last location 
+  //written we need to subtract 1 from _arraylcn
+  return _arraylcn - 1;
 }
 
 void printarrayHEX(uint8_t *buff, uint32_t len)
