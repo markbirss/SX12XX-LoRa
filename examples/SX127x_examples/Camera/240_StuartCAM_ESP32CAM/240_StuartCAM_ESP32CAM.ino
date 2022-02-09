@@ -98,7 +98,7 @@ void loop()
     Serial.println(F("Camera config failed"));
     Serial.println(F("Sending DTInfo packet"));
     setupLoRaDevice();
-    ARsendArrayInfo();
+    ARsendDTInfo();
     startSleep();
   }
   else
@@ -119,7 +119,7 @@ void loop()
       Serial.flush();
       bitSet(ARDTflags, ARNoCamera);             //set flag bit for no camera working
       setupLoRaDevice();
-      ARsendArrayInfo();
+      ARsendDTInfo();
       startSleep();
     }
   }
