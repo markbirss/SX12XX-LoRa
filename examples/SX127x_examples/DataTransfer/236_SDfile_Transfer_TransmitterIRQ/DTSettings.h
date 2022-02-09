@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 13/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 09/02/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -32,8 +32,8 @@ const uint32_t ACKsegtimeoutmS = 75;            //mS to wait for receiving an AC
 const uint32_t ACKopentimeoutmS = 250;          //mS to wait for receiving an ACK before re-trying transmit file open
 const uint32_t ACKclosetimeoutmS = 250;         //mS to wait for receiving an ACK before re-trying transmit file close
 const uint32_t DuplicatedelaymS = 10;           //ms delay if there has been an duplicate segment or command receipt
-const uint32_t packetdelaymS = 0;               //mS delay between transmitted packets
-
+const uint32_t FunctionDelaymS = 0;             //delay between functions such as open file, send segments etc
+const uint32_t PacketDelaymS = 1000;            //mS delay between transmitted packets such as DTInfo etc
 const uint8_t StartAttempts = 2;                //number of attempts to start transfer before a fail
 const uint8_t SendAttempts = 5;                 //number of attempts carrying out a process before a restart
 const uint32_t NoAckCountLimit = 250;           //if no NoAckCount exceeds this value - restart transfer

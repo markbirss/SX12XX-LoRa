@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 13/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 09/02/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -48,12 +48,12 @@ SX127XLT LoRa;                               //create an SX127XLT library instan
 #define SDFATLIB
 
 #include <DTSDlibrary.h>                     //library of SD functions
-#include <SDtransferIRQ.h>                      //library of data transfer functions
+#include <SDtransferIRQ.h>                   //library of data transfer functions
 
 //choice of files to send
 //char FileName[] = "/$50SATL.JPG";          //file length 63091 bytes, file CRC 0x59CE
-char FileName[] = "/$50SATS.JPG";        //file length 6880 bytes, file CRC 0x0281
-//char FileName[] = "/$50SATT.JPG";        //file length 1068 bytes, file CRC 0x6A02
+char FileName[] = "/$50SATS.JPG";            //file length 6880 bytes, file CRC 0x0281
+//char FileName[] = "/$50SATT.JPG";          //file length 1068 bytes, file CRC 0x6A02
 
 
 void loop()
