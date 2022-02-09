@@ -5,9 +5,13 @@
   suitable for the intended purpose and free from errors.
 *******************************************************************************************************/
 
+
 #define NSS 10                                  //select pin on LoRa device
+#define NRESET 9                                //reset pin on LoRa device
 #define LED1 8                                  //LED used to indicate transmission
 #define SDCS 30
+
+#define Monitorport Serial                      //Port where serial prints go
 
 #define LORA_DEVICE DEVICE_SX1278               //this is the device we are using
 
@@ -24,7 +28,7 @@ const int8_t TXpower = 10;                      //LoRa transmit power in dBm
 
 const uint32_t TXtimeoutmS = 5000;              //mS to wait for TX to complete
 const uint32_t RXtimeoutmS = 60000;             //mS to wait for receiving a packet
-const uint32_t ACKdelaymS = 0;                  //ms delay after packet actioned and ack sent
+const uint32_t ACKdelaymS = 10;                 //ms delay after packet actioned and ack sent
 const uint32_t ACKsegtimeoutmS = 75;            //mS to wait for receiving an ACK before re-trying transmit segment
 const uint32_t ACKopentimeoutmS = 250;          //mS to wait for receiving an ACK before re-trying transmit file open
 const uint32_t ACKclosetimeoutmS = 250;         //mS to wait for receiving an ACK before re-trying transmit file close
@@ -34,9 +38,10 @@ const uint32_t packetdelaymS = 0;               //mS delay between transmitted p
 
 const uint8_t HeaderSizeMax = 12;               //max size of header in bytes, minimum size is 7 bytes
 const uint8_t DataSizeMax = 245;                //max size of data array in bytes
-const uint8_t DTfilenamesize = 32;              //size of DTfilename buffer
+const uint8_t Maxfilenamesize = 32;              //size of DTfilename buffer
 
 const uint16_t NetworkID = 0x3210;              //a unique identifier to go out with packet
-const uint8_t DTSendAttempts = 10;              //number of attempts sending a packet before a restart
+const uint8_t SendAttempts = 10;                //number of attempts sending a packet or attempting a process before a restart of transfer
+const uint8_t StartAttempts = 10;               //number of attempts sending the file
 
-const uint8_t DTSegmentSize = 245;              //number of bytes in each segment, 245 is maximum value for LoRa
+const uint8_t SegmentSize = 245;                //number of bytes in each segment, 245 is maximum value for LoRa

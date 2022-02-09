@@ -7,7 +7,7 @@
 
 /*******************************************************************************************************
   Program Operation - This is a program that transfers a file from an Arduinos SD card to a folder on a
-  PC that is connected to the Arduino via a Serial port. The transfer process uses the YModem protocol
+  PC that is connected to the Arduino via a Seril port. The transfer process uses the YModem protocol
   and the PC receives the file using the Tera Term Serial terminal program.
 
   Instructions for using the program are to be found here;
@@ -23,11 +23,12 @@
 
 File root;
 
-const uint16_t SDCS = 40;
+const uint16_t SDCS = 30;
 const uint16_t LED1 = 8;                    //LED indicator etc. on during transfers
 char FileName[] = "$50SATL.JPG";            //file length 63091 bytes, file CRC 0x59CE
 uint16_t transferNumber = 0;;
-
+uint32_t filelength;
+uint32_t bytestransfered;
 
 void loop()
 {
@@ -39,11 +40,25 @@ void loop()
   Serial.println(FileName);
   Serial.flush();
   digitalWrite(LED1, HIGH);
-  yModemSend(FileName, 1, 1);                       //transfer filename with waitForReceiver and batchMode optiosn set
+  
+  bytestransfered = yModemSend(FileName, 1, 1);     //transfer filename with waitForReceiver and batchMode options set
+  
+  if (bytestransfered > 0)
+  {
+  Serial.print(F("YModem transfer completed "));
+  Serial.print(bytestransfered);
+  Serial.println(F(" bytes sent"));
+  }
+  else
+  {
+  Serial.println(F("YModem transfer FAILED"));
+  }
+  Serial.println();
+  
   digitalWrite(LED1, LOW);
   Serial.println(F("Transfer finished "));
   Serial.println();
-  delay(15000);
+  delay(10000);
 }
 
 

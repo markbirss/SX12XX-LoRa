@@ -5,8 +5,6 @@
   for the intended purpose and free from errors.
 *******************************************************************************************************/
 
-//#define DEBUGSDLIB
-
 #ifdef SDFATLIB
 #include <SdFat.h>
 SdFat SD;
@@ -160,34 +158,6 @@ void DTSD_printDirectory()
 #ifdef SDLIB
 void DTSD_printDirectory()
 {
-
-  /*
-  Serial.println(F("Card directory"));
-
-  while (true)
-  {
-    File entry =  dataFile.openNextFile();
-    if (! entry)
-    {
-      //no more files
-      break;
-    }
-    Serial.print(entry.name());
-    if (entry.isDirectory())
-    {
-      Serial.println(F("/"));
-      DTSD_printDirectory();
-    }
-    else
-    {
-      //files have sizes, directories do not
-      Serial.print(F("\t\t"));
-      Serial.println(entry.size(), DEC);
-    }
-    entry.close();
-  }
-  */
-  
   dataFile = SD.open("/");
 
   printDirectorySD(dataFile, 0);
@@ -231,6 +201,7 @@ void printDirectorySD(File dir, int numTabs)
   }
 }
 #endif
+
 
 bool DTSD_dumpSegmentHEX(uint8_t segmentsize)
 {
@@ -280,7 +251,7 @@ bool DTSD_dumpSegmentHEX(uint8_t segmentsize)
 }
 
 
-uint32_t DTSD_openFileRead(char *buff)
+uint32_t DTSD_openFileRead2(char *buff)
 {
   uint32_t filesize;
 
@@ -291,6 +262,26 @@ uint32_t DTSD_openFileRead(char *buff)
 }
 
 
+uint32_t DTSD_openFileRead(char *buff)
+{
+  uint32_t filesize;
+  
+  if (SD.exists(buff))
+  {
+  //Serial.println(F("File exists"));
+  dataFile = SD.open(buff);
+  filesize = dataFile.size();
+  dataFile.seek(0);
+  return filesize;
+  }
+  else
+  {
+   //Serial.println(F("File does not exist"));
+   return 0;
+  }
+}
+
+ 
 uint16_t DTSD_getNumberSegments(uint32_t filesize, uint8_t segmentsize)
 {
   uint16_t segments;
@@ -321,21 +312,21 @@ bool DTSD_openNewFileWrite(char *buff)
 {
   if (SD.exists(buff))
   {
-    Serial.print(buff);
-    Serial.println(F(" File exists - deleting"));
+    //Serial.print(buff);
+    //Serial.println(F(" File exists - deleting"));
     SD.remove(buff);
   }
 
   if (dataFile = SD.open(buff, FILE_WRITE))
   {
-    Serial.print(buff);
-    Serial.println(F(" SD File opened"));
+    //Serial.print(buff);
+    //Serial.println(F(" SD File opened"));
     return true;
   }
   else
   {
-    Serial.print(buff);
-    Serial.println(F(" ERROR opening file"));
+    //Serial.print(buff);
+    //Serial.println(F(" ERROR opening file"));
     return false;
   }
 }
@@ -450,13 +441,6 @@ uint16_t DTSD_fileCRCCCITT(uint32_t fsize)
         CRCcalc <<= 1;
     }
   }
-
-#ifdef DEBUGSDLIB
-  Serial.print(F(" {SDlibrary} "));
-  Serial.print(index);
-  Serial.print(F(" Bytes checked - CRC "));
-  Serial.println(CRCcalc, HEX);
-#endif
 
   return CRCcalc;
 }

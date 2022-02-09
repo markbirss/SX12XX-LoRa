@@ -32,7 +32,7 @@
 //110122 added local function ARprintArrayHEX(uint8_t *buff, uint32_t len)
 //110122 Replace printpacketHEX() with ARprintArrayHEX() which used  LoRa.printSXBufferHEX() and Monitorport.print()
 //180122 preface all variables and functions with AR so that functions can be used with SD transfer functions
-//010222 Added ARsendArrayInfo functions
+//010222 Added ARsendDTInfo functions
 
 //so that Monitorport prints default to the primary Monitorport port of Monitorport
 #ifndef Monitorport
@@ -112,7 +112,7 @@ void ARprintACKdetail();
 void ARprintdata(uint8_t *dataarray, uint8_t arraysize);
 uint16_t ARgetNumberSegments(uint32_t arraysize, uint8_t segmentsize);
 uint8_t ARgetLastSegmentSize(uint32_t arraysize, uint8_t segmentsize);
-bool ARsendArrayInfo();
+bool ARsendDTInfo();
 void ARbuild_DTInfoHeader(uint8_t *header, uint8_t headersize, uint8_t datalen);
 
 //Receiver mode functions
@@ -855,7 +855,7 @@ uint8_t ARgetLastSegmentSize(uint32_t arraysize, uint8_t segmentsize)
 }
 
 
-bool ARsendArrayInfo()
+bool ARsendDTInfo()
 {
   //Send array info packet, for this implmentation its really only the flags in ARDTflags that is sent
 

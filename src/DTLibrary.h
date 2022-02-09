@@ -11,6 +11,15 @@
   sketch folder and used locally. In this way its possible to carry out custom modifications. 
    
 *******************************************************************************************************/
+/*
+ToDo:
+Review actions when local or remote file SD cannot be opened
+Fix - //if the LoRa.receiveDT() function detects an error RXOK is 0
+Fix - //if there has been a send and ack error, RXPacketL returns as 0
+*/
+
+//110122 added local function printArrayHEX(uint8_t *buff, uint32_t len)
+
 
 //Variables used on tranmitter and receiver
 uint8_t RXPacketL;                         //length of received packet
@@ -30,6 +39,7 @@ char DTfilenamebuff[DTfilenamesize];       //global buffer to store current file
 uint8_t DTheader[16];                      //header array
 int DTLED = -1;                            //pin number for indicator LED, if -1 then not used
 uint8_t DTdata[245];                       //data/segment array
+uint8_t DTflags = 0;                       //Flags byte used to pass status information between nodes
 
 //Transmitter mode only variables
 uint16_t TXNetworkID;                      //this is used to store the 'network' number, receiver must have the same networkID
@@ -87,6 +97,8 @@ void printDestinationFileDetails();
 void setDTLED(int8_t pinnumber);
 void printheader(uint8_t *hdr, uint8_t hdrsize);
 
+const uint8_t NoSDSave = 0;                   //bit number of DTflags byte to set when no SD used
+
 
 //************************************************
 //Transmit mode functions
@@ -108,17 +120,17 @@ bool sendFile(char *DTFileName, uint8_t namelength)
       Serial.print(DTFileName);
       Serial.println(F(" opened OK on remote"));
       printLocalFileDetails();
-      Serial.println();
     }
     else
     {
       Serial.println(F("*************************"));
       Serial.println(DTFileName);
-      Serial.println(F("ERROR opening remote file"));
+      Serial.println(F("ERROR opening files"));
       Serial.println(F("Restarting transfer"));
       Serial.println(F("*************************"));
       DTFileTransferComplete = false;
-      continue;
+      delay(2000);
+	  continue;
     }
 
     delay(packetdelaymS);
@@ -220,11 +232,13 @@ bool startFileTransfer(char *buff, uint8_t filenamesize, uint8_t attempts)
   Serial.print(buff);
   Serial.println(F(" Start file transfer"));
   DTSourceFileLength = DTSD_openFileRead(buff);                   //get the file length
-
+  NoAckCount = 0;
+  
   if (DTSourceFileLength == 0)
   {
-    Serial.print(F("Error - opening local file "));
+    Serial.print(F("Error - opening file"));
     Serial.println(buff);
+    delay(2000);
     return false;
   }
 
@@ -273,22 +287,22 @@ bool startFileTransfer(char *buff, uint8_t filenamesize, uint8_t attempts)
       Serial.println(F("Transmit error"));
     }
 
-    Serial.print(F("Wait ACK"));
+    //Serial.print(F("Wait ACK"));
     ValidACK = LoRa.waitACKDT(DTheader, DTFileOpenHeaderL, ACKopentimeoutmS);
     RXPacketType = DTheader[0];
 
     if ((ValidACK > 0) && (RXPacketType == DTFileOpenACK))
     {
-      Serial.println(F(" - Valid ACK"));
 #ifdef DEBUG
+      Serial.println(F("Valid ACK"));
       printPacketHex();
 #endif
     }
     else
     {
       NoAckCount++;
-      Serial.print(F(" - No ACK "));
-      Serial.println(NoAckCount);
+      Serial.println(F("No ACK"));
+      //Serial.println(NoAckCount);
 #ifdef DEBUG
       printACKdetail();
       Serial.print(F("  ACKPacket "));
@@ -434,8 +448,8 @@ bool sendFileSegment(uint16_t segnum, uint8_t segmentsize)
     else
     {
       NoAckCount++;
-      Serial.print(F("Error no ACK "));
-      Serial.println(NoAckCount);
+      Serial.println(F("No ACK"));
+      //Serial.println(NoAckCount);
 
       if (NoAckCount > NoAckCountLimit)
       {
@@ -460,8 +474,7 @@ bool endFileTransfer(char *buff, uint8_t filenamesize)
 
   do
   {
-    printSeconds();
-    Serial.println(F(" Send close remote file"));
+    Serial.println(F("Send close remote file"));
 
     if (DTLED >= 0)
     {
@@ -501,8 +514,8 @@ bool endFileTransfer(char *buff, uint8_t filenamesize)
     else
     {
       NoAckCount++;
-      Serial.println(F("No ACK "));
-      Serial.println(NoAckCount);
+      Serial.println(F("No ACK"));
+      //Serial.println(NoAckCount);
       if (NoAckCount > NoAckCountLimit)
       {
         Serial.println(F("ERROR NoACK limit reached"));
@@ -528,7 +541,7 @@ void build_DTFileOpenHeader(uint8_t *header, uint8_t headersize, uint8_t datalen
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTFileOpen);         //byte 0, write the packet type
-  arrayWriteUint8(0);                  //byte 1, initial DTflags byte, not used here
+  arrayWriteUint8(DTflags);            //byte 1, DTflags byte
   arrayWriteUint8(headersize);         //byte 2, write length of header
   arrayWriteUint8(datalength);         //byte 3, write length of dataarray
   arrayWriteUint32(filelength);        //byte 4,5,6,7, write the file length
@@ -545,7 +558,7 @@ void build_DTSegmentHeader(uint8_t *header, uint8_t headersize, uint8_t datalen,
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTSegmentWrite);     //write the packet type
-  arrayWriteUint8(0);                  //initial DTflags byte, not used here
+  arrayWriteUint8(DTflags);            //DTflags byte
   arrayWriteUint8(headersize);         //write length of header
   arrayWriteUint8(datalen);            //write length of data array
   arrayWriteUint16(segnum);            //write the DTsegment number
@@ -559,7 +572,7 @@ void build_DTFileCloseHeader(uint8_t *header, uint8_t headersize, uint8_t datale
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTFileClose);        //byte 0, write the packet type
-  arrayWriteUint8(0);                  //byte 1, initial DTflags byte, not used here
+  arrayWriteUint8(DTflags);            //byte 1, DTflags byte
   arrayWriteUint8(headersize);         //byte 2, write length of header
   arrayWriteUint8(datalength);         //byte 3, write length of dataarray
   arrayWriteUint32(filelength);        //byte 4,5,6,7, write the file length
@@ -720,7 +733,7 @@ void readHeaderDT()
   // so we can decide what to do next.
   beginarrayRW(DTheader, 0);                      //start buffer read at location 0
   RXPacketType = arrayReadUint8();                //load the packet type
-  RXFlags = arrayReadUint8();                     //initial DTflags byte, not used here
+  RXFlags = arrayReadUint8();                     //DTflags byte
   RXHeaderL = arrayReadUint8();                   //load the header length
   RXDataarrayL = arrayReadUint8();                //load the datalength
   DTSegment = arrayReadUint16();                  //load the segment number
@@ -925,7 +938,12 @@ bool processFileOpen(uint8_t *buff, uint8_t filenamesize)
   Serial.print(F(" SD File Open request"));
   Serial.println();
   printSourceFileDetails();
-
+  
+  if bitRead(RXFlags, NoSDSave)
+  {  
+  Serial.println(F("Remote did not save file to SD"));
+  } 
+    
   if (DTSD_openNewFileWrite(DTfilenamebuff))      //open file for write at beginning, delete if it exists
   {
     Serial.print((char*) DTfilenamebuff);
@@ -1098,4 +1116,22 @@ void printheader(uint8_t *hdr, uint8_t hdrsize)
   Serial.print(hdrsize);
   Serial.print(F(" "));
   printarrayHEX(hdr, hdrsize);
+}
+
+
+void printArrayHEX(uint8_t *buff, uint32_t len)
+{
+  uint8_t index, buffdata;
+
+  for (index = 0; index < len; index++)
+  {
+    buffdata = buff[index];
+    if (buffdata < 16)
+    {
+      Serial.print(F("0"));
+    }
+    Serial.print(buffdata, HEX);
+    Serial.print(F(" "));
+  }
+
 }
