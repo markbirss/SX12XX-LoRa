@@ -357,7 +357,7 @@ bool ARstartArrayTransfer(char *buff, uint8_t filenamesize)
       digitalWrite(ARDTLED, HIGH);
     }
 
-    ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTArrayStartHeaderL, (uint8_t *) buff, filenamesize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+    ARTXPacketL = LoRa.transmitDT(ARDTheader, DTArrayStartHeaderL, (uint8_t *) buff, filenamesize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
 
     if (ARDTLED >= 0)
     {
@@ -377,7 +377,7 @@ bool ARstartArrayTransfer(char *buff, uint8_t filenamesize)
     }
 #endif
 
-    ValidACK = LoRa.waitACKDTIRQ(ARDTheader, DTArrayStartHeaderL, ACKopentimeoutmS);
+    ValidACK = LoRa.waitACKDT(ARDTheader, DTArrayStartHeaderL, ACKopentimeoutmS);
     ARRXPacketType = ARDTheader[0];
 
     if ((ValidACK > 0) && (ARRXPacketType == DTArrayStartACK))
@@ -504,7 +504,7 @@ bool ARsendArraySegment(uint16_t segnum, uint8_t segmentsize)
       digitalWrite(ARDTLED, HIGH);
     }
 
-    ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTSegmentWriteHeaderL, (uint8_t *) ARDTdata, segmentsize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+    ARTXPacketL = LoRa.transmitDT(ARDTheader, DTSegmentWriteHeaderL, (uint8_t *) ARDTdata, segmentsize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
     if (ARDTLED >= 0)
     {
       digitalWrite(ARDTLED, LOW);
@@ -517,7 +517,7 @@ bool ARsendArraySegment(uint16_t segnum, uint8_t segmentsize)
 #endif
     }
 
-    ValidACK = LoRa.waitACKDTIRQ(ARDTheader, DTSegmentWriteHeaderL, ACKsegtimeoutmS);
+    ValidACK = LoRa.waitACKDT(ARDTheader, DTSegmentWriteHeaderL, ACKsegtimeoutmS);
     ARRXPacketType = ARDTheader[0];
 
     if (ValidACK > 0)
@@ -615,7 +615,7 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
       digitalWrite(ARDTLED, HIGH);
     }
 
-    ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTArrayEndHeaderL, (uint8_t *) buff, filenamesize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+    ARTXPacketL = LoRa.transmitDT(ARDTheader, DTArrayEndHeaderL, (uint8_t *) buff, filenamesize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
 
     if (ARDTLED >= 0)
     {
@@ -632,7 +632,7 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
 #endif
     }
 
-    ValidACK = LoRa.waitACKDTIRQ(ARDTheader, DTArrayEndHeaderL, ACKclosetimeoutmS);
+    ValidACK = LoRa.waitACKDT(ARDTheader, DTArrayEndHeaderL, ACKclosetimeoutmS);
     ARRXPacketType = ARDTheader[0];
 
     if ((ValidACK > 0) && (ARRXPacketType == DTArrayEndACK))
@@ -871,7 +871,7 @@ bool ARsendDTInfo()
     Monitorport.print(F("Send DTInfo packet attempt "));
     Monitorport.println(localattempts);
 #endif
-    ARTXPacketL = LoRa.transmitDTIRQ(ARDTheader, DTInfoHeaderL, (uint8_t *) ARDTdata, 0, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+    ARTXPacketL = LoRa.transmitDT(ARDTheader, DTInfoHeaderL, (uint8_t *) ARDTdata, 0, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
 
     if (ARTXPacketL == 0)                                         //if there has been an error ARTXPacketL returns as 0
     {
@@ -881,7 +881,7 @@ bool ARsendDTInfo()
       continue;
     }
 
-    ValidACK = LoRa.waitACKDTIRQ(ARDTheader, DTInfoHeaderL, ACKsegtimeoutmS);
+    ValidACK = LoRa.waitACKDT(ARDTheader, DTInfoHeaderL, ACKsegtimeoutmS);
 
     if (ValidACK > 0)
     {
@@ -1003,7 +1003,7 @@ bool ARreceivePacketDT()
   //Receive data transfer packets
 
   ARRXPacketType = 0;
-  ARRXPacketL = LoRa.receiveDTIRQ(ARDTheader, HeaderSizeMax, (uint8_t *) ARDTdata, DataSizeMax, NetworkID, RXtimeoutmS, WAIT_RX);
+  ARRXPacketL = LoRa.receiveDT(ARDTheader, HeaderSizeMax, (uint8_t *) ARDTdata, DataSizeMax, NetworkID, RXtimeoutmS, WAIT_RX);
 
   if (ARDTLED >= 0)
   {
@@ -1017,7 +1017,7 @@ bool ARreceivePacketDT()
 #endif
   if (ARRXPacketL > 0)
   {
-    //if the LoRa.receiveDTIRQ() returns a value > 0 for ARRXPacketL then packet was received OK
+    //if the LoRa.receiveDT() returns a value > 0 for ARRXPacketL then packet was received OK
     //then only action payload if destinationNode = thisNode
     ARreadHeaderDT();                        //get the basic header details into global variables ARRXPacketType etc
     ARprocessPacket(ARRXPacketType);         //process and act on the packet
@@ -1128,7 +1128,7 @@ bool ARprocessSegmentWrite()
       digitalWrite(ARDTLED, HIGH);
     }
 
-    LoRa.sendACKDTIRQ(ARDTheader, DTStartHeaderL, TXpower);
+    LoRa.sendACKDT(ARDTheader, DTStartHeaderL, TXpower);
 
     if (ARDTLED >= 0)
     {
@@ -1162,7 +1162,7 @@ bool ARprocessSegmentWrite()
       digitalWrite(ARDTLED, HIGH);
     }
 
-    LoRa.sendACKDTIRQ(ARDTheader, DTSegmentWriteHeaderL, TXpower);
+    LoRa.sendACKDT(ARDTheader, DTSegmentWriteHeaderL, TXpower);
 
     if (ARDTLED >= 0)
     {
@@ -1192,7 +1192,7 @@ bool ARprocessSegmentWrite()
     {
       digitalWrite(ARDTLED, HIGH);
     }
-    LoRa.sendACKDTIRQ(ARDTheader, DTSegmentWriteHeaderL, TXpower);
+    LoRa.sendACKDT(ARDTheader, DTSegmentWriteHeaderL, TXpower);
 
     if (ARDTLED >= 0)
     {
@@ -1235,7 +1235,7 @@ bool ARprocessSegmentWrite()
     {
       digitalWrite(ARDTLED, HIGH);
     }
-    LoRa.sendACKDTIRQ(ARDTheader, DTSegmentWriteHeaderL, TXpower);
+    LoRa.sendACKDT(ARDTheader, DTSegmentWriteHeaderL, TXpower);
     if (ARDTLED >= 0)
     {
       digitalWrite(ARDTLED, LOW);
@@ -1286,7 +1286,7 @@ bool ARprocessArrayStart(uint8_t *buff, uint8_t filenamesize)
   {
     digitalWrite(ARDTLED, HIGH);
   }
-  LoRa.sendACKDTIRQ(ARDTheader, DTArrayStartHeaderL, TXpower);
+  LoRa.sendACKDT(ARDTheader, DTArrayStartHeaderL, TXpower);
   if (ARDTLED >= 0)
   {
     digitalWrite(ARDTLED, LOW);
@@ -1351,7 +1351,7 @@ bool ARprocessArrayEnd()
     digitalWrite(ARDTLED, HIGH);
   }
 
-  LoRa.sendACKDTIRQ(ARDTheader, DTArrayEndHeaderL, TXpower);
+  LoRa.sendACKDT(ARDTheader, DTArrayEndHeaderL, TXpower);
 
   if (ARDTLED >= 0)
   {
