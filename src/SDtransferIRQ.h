@@ -51,7 +51,7 @@ uint16_t SDDTErrors;                         //used for tracking errors in the t
 uint16_t SDTXNetworkID;                      //this is used to store the 'network' number, receiver must have the same networkID
 uint16_t SDTXArrayCRC;                       //should contain CRC of data array transmitted
 uint8_t  SDTXPacketL;                        //length of transmitted packet
-uint16_t SDSDLocalPayloadCRC;                  //for calculating the local data array CRC
+uint16_t SDLocalPayloadCRC;                  //for calculating the local data array CRC
 uint8_t SDDTLastSegmentSize;                 //size of the last segment
 uint16_t SDDTNumberSegments;                 //number of segments for a file transfer
 uint16_t SDDTSentSegments;                   //count of segments sent
@@ -93,7 +93,7 @@ void SDbuild_DTInfoHeader(uint8_t *header, uint8_t headersize, uint8_t datalen);
 bool SDreceiveaPacketDT();
 void SDreadHeaderDT();
 bool SDprocessPacket(uint8_t packettype);
-void SDSDprintPacketDetails();
+void SDprintPacketDetails();
 bool SDprocessSegmentWrite();
 bool SDprocessFileOpen(uint8_t *filename, uint8_t filenamesize);
 bool SDprocessFileClose();
@@ -320,7 +320,7 @@ bool SDstartFileTransfer(char *filename, uint8_t filenamesize)
   SDDTNumberSegments = DTSD_getNumberSegments(SDDTSourceFileLength, SegmentSize);
   SDDTLastSegmentSize = DTSD_getLastSegmentSize(SDDTSourceFileLength, SegmentSize);
   SDbuild_DTFileOpenHeader(SDDTheader, DTFileOpenHeaderL, filenamesize, SDDTSourceFileLength, SDDTSourceFileCRC, SegmentSize);
-  SDSDLocalPayloadCRC = LoRa.CRCCCITT((uint8_t *) filename, filenamesize, 0xFFFF);
+  SDLocalPayloadCRC = LoRa.CRCCCITT((uint8_t *) filename, filenamesize, 0xFFFF);
 
   do
   {
@@ -970,7 +970,7 @@ bool SDreceiveaPacketDT()
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
     Monitorport.print(F("PacketError"));
-    SDSDprintPacketDetails();
+    SDprintPacketDetails();
     SDprintReliableStatus();
     Monitorport.println();
 #endif
@@ -1027,7 +1027,7 @@ bool SDprocessPacket(uint8_t packettype)
 }
 
 
-void SDSDprintPacketDetails()
+void SDprintPacketDetails()
 {
 #ifdef ENABLEMONITOR
   SDPacketRSSI = LoRa.readPacketRSSI();
@@ -1127,7 +1127,7 @@ bool SDprocessSegmentWrite()
     Monitorport.println(F(" already received "));
     delay(DuplicatedelaymS);
 #ifdef DEBUG
-    SDSDprintPacketDetails();
+    SDprintPacketDetails();
     SDprintPacketRSSI();
 #endif
 #endif
@@ -1163,7 +1163,7 @@ bool SDprocessSegmentWrite()
     Monitorport.print(F(" "));
 
 #ifdef DEBUG
-    SDSDprintPacketDetails();
+    SDprintPacketDetails();
     SDprintPacketRSSI();
 #endif
 
