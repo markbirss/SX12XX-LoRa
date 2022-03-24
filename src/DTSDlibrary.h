@@ -11,10 +11,13 @@ SdFat SD;
 File dataFile;                                   //name the file instance needed for SD library routines
 #endif
 
-
 #ifdef SDLIB
 #include <SD.h>
 File dataFile;                                   //name the file instance needed for SD library routines
+#endif
+
+#ifndef Monitorport
+#define Monitorport Serial                       //output to Serial if no other port defined 
 #endif
 
 
@@ -48,7 +51,7 @@ bool DTSD_dumpFileASCII(char *buff)
   {
     while (dataFile.available())
     {
-      Serial.write(dataFile.read());
+      Monitorport.write(dataFile.read());
     }
     dataFile.close();
     return true;
@@ -75,8 +78,8 @@ bool DTSD_dumpFileHEX(char *buff)
   dataFile = SD.open(buff);
   filesize = dataFile.size();
   filesize--;                                      //file data locations are from 0 to (filesize -1);
-  Serial.print(F("Lcn    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"));
-  Serial.println();
+  Monitorport.print(F("Lcn    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"));
+  Monitorport.println();
 
   if (dataFile)                                    //if the file is available, read from it
   {
@@ -84,25 +87,25 @@ bool DTSD_dumpFileHEX(char *buff)
     {
       for (Loopv1 = 0; Loopv1 <= filesize;)
       {
-        Serial.print(F("0x"));
+        Monitorport.print(F("0x"));
         if (Loopv1 < 0x10)
         {
-          Serial.print(F("0"));
+          Monitorport.print(F("0"));
         }
-        Serial.print((Loopv1), HEX);
-        Serial.print(F("  "));
+        Monitorport.print((Loopv1), HEX);
+        Monitorport.print(F("  "));
         for (Loopv2 = 0; Loopv2 <= 15; Loopv2++)
         {
           fileData = dataFile.read();
           if (fileData < 0x10)
           {
-            Serial.print(F("0"));
+            Monitorport.print(F("0"));
           }
-          Serial.print(fileData, HEX);
-          Serial.print(F(" "));
+          Monitorport.print(fileData, HEX);
+          Monitorport.print(F(" "));
           Loopv1++;
         }
-        Serial.println();
+        Monitorport.println();
       }
     }
     dataFile.close();
@@ -110,7 +113,7 @@ bool DTSD_dumpFileHEX(char *buff)
   }
   else
   {
-    Serial.println(F("File not available"));
+    Monitorport.println(F("File not available"));
     return false;
   }
 }
@@ -149,7 +152,7 @@ uint32_t DTSD_getFileSize(char *buff)
 void DTSD_printDirectory()
 {
   dataFile = SD.open("/");
-  Serial.println(F("Card directory"));
+  Monitorport.println(F("Card directory"));
   SD.ls("/", LS_R);
 }
 #endif
@@ -161,8 +164,8 @@ void DTSD_printDirectory()
   dataFile = SD.open("/");
 
   printDirectorySD(dataFile, 0);
-  
-  Serial.println();
+
+  Monitorport.println();
 }
 
 
@@ -181,21 +184,21 @@ void printDirectorySD(File dir, int numTabs)
 
     for (uint8_t i = 0; i < numTabs; i++)
     {
-      Serial.print('\t');
+      Monitorport.print('\t');
     }
 
-    Serial.print(entry.name());
+    Monitorport.print(entry.name());
 
     if (entry.isDirectory())
     {
-      Serial.println("/");
+      Monitorport.println("/");
       printDirectorySD(entry, numTabs + 1);
     }
     else
     {
       // files have sizes, directories do not
-      Serial.print("\t\t");
-      Serial.println(entry.size(), DEC);
+      Monitorport.print("\t\t");
+      Monitorport.println(entry.size(), DEC);
     }
     entry.close();
   }
@@ -208,23 +211,23 @@ bool DTSD_dumpSegmentHEX(uint8_t segmentsize)
   uint16_t Loopv1, Loopv2;
   uint8_t fileData;
 
-  Serial.print(F("Print segment of "));
-  Serial.print(segmentsize);
-  Serial.println(F(" bytes"));
-  Serial.print(F("Lcn    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"));
-  Serial.println();
+  Monitorport.print(F("Print segment of "));
+  Monitorport.print(segmentsize);
+  Monitorport.println(F(" bytes"));
+  Monitorport.print(F("Lcn    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"));
+  Monitorport.println();
 
   if (dataFile)                                    //if the file is available, read from it
   {
     for (Loopv1 = 0; Loopv1 < segmentsize;)
     {
-      Serial.print(F("0x"));
+      Monitorport.print(F("0x"));
       if (Loopv1 < 0x10)
       {
-        Serial.print(F("0"));
+        Monitorport.print(F("0"));
       }
-      Serial.print((Loopv1), HEX);
-      Serial.print(F("  "));
+      Monitorport.print((Loopv1), HEX);
+      Monitorport.print(F("  "));
       for (Loopv2 = 0; Loopv2 <= 15; Loopv2++)
       {
         //stop printing if all of segment has been printed
@@ -233,14 +236,14 @@ bool DTSD_dumpSegmentHEX(uint8_t segmentsize)
           fileData = dataFile.read();
           if (fileData < 0x10)
           {
-            Serial.print(F("0"));
+            Monitorport.print(F("0"));
           }
-          Serial.print(fileData, HEX);
-          Serial.print(F(" "));
+          Monitorport.print(fileData, HEX);
+          Monitorport.print(F(" "));
           Loopv1++;
         }
       }
-      Serial.println();
+      Monitorport.println();
     }
     return true;
   }
@@ -265,23 +268,23 @@ uint32_t DTSD_openFileRead2(char *buff)
 uint32_t DTSD_openFileRead(char *buff)
 {
   uint32_t filesize;
-  
+
   if (SD.exists(buff))
   {
-  //Serial.println(F("File exists"));
-  dataFile = SD.open(buff);
-  filesize = dataFile.size();
-  dataFile.seek(0);
-  return filesize;
+    //Monitorport.println(F("File exists"));
+    dataFile = SD.open(buff);
+    filesize = dataFile.size();
+    dataFile.seek(0);
+    return filesize;
   }
   else
   {
-   //Serial.println(F("File does not exist"));
-   return 0;
+    //Monitorport.println(F("File does not exist"));
+    return 0;
   }
 }
 
- 
+
 uint16_t DTSD_getNumberSegments(uint32_t filesize, uint8_t segmentsize)
 {
   uint16_t segments;
@@ -312,21 +315,21 @@ bool DTSD_openNewFileWrite(char *buff)
 {
   if (SD.exists(buff))
   {
-    //Serial.print(buff);
-    //Serial.println(F(" File exists - deleting"));
+    //Monitorport.print(buff);
+    //Monitorport.println(F(" File exists - deleting"));
     SD.remove(buff);
   }
 
   if (dataFile = SD.open(buff, FILE_WRITE))
   {
-    //Serial.print(buff);
-    //Serial.println(F(" SD File opened"));
+    //Monitorport.print(buff);
+    //Monitorport.println(F(" SD File opened"));
     return true;
   }
   else
   {
-    //Serial.print(buff);
-    //Serial.println(F(" ERROR opening file"));
+    //Monitorport.print(buff);
+    //Monitorport.println(F(" ERROR opening file"));
     return false;
   }
 }

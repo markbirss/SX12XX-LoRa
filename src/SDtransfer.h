@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 13/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 14/03/22
 
   The functions expect the calling sketch to create an instance called LoRa, so that functions
   are called like this; LoRa.getSDTXNetworkID().
@@ -10,11 +10,24 @@
   There is a copy of this file in the SX12XX-LoRa library \src folder, but the file can be copied to the
   sketch folder and used locally. In this way its possible to carry out custom modifications.
 
+  Extensive use is made of #defines to allow the monotoring and debug prints to serial monitor to be
+  turned off, this is to allow for the circumstance where the primary serial port is in use for serial
+  file transfers to a PC or similar. To see the serial prints you need to have this set of #defines;
+
+  #define Monitorport Serial
+  #define ENABLEMONITOR
+
 *******************************************************************************************************/
+/*
+  ToDo:
+
+*/
 
 //110122 added local function printArrayHEX(uint8_t *buff, uint32_t len)
 //130122 Made variable and function names unique so that the array transfer routines can be used in the same program
 //130122 Converted all Serial prints to Monitorport.print() format
+//140322 added #ifdef ENABLEMONITOR to serial prints
+
 
 #define SDUNUSED(v) (void) (v)               //add SDUNUSED(variable); to avoid compiler warnings 
 
@@ -23,10 +36,9 @@
 #define Monitorport Serial
 #endif
 
-#include <arrayRW.h>
-//#define DEBUG                              //enable this define to print debug info for segment transfers
+#include <arrayRW.h>                         //part of SX12xx library
+//#define DEBUG                              //enable this define to print additional debug info for segment transfers
 
-//Variables used on tranmitter and receiver
 uint8_t SDRXPacketL;                         //length of received packet
 uint8_t SDRXPacketType;                      //type of received packet, segment write, ACK, NACK etc
 uint8_t SDRXHeaderL;                         //length of header
@@ -39,16 +51,15 @@ uint32_t SDDTDestinationFileLength;          //length of file written on the des
 uint16_t SDDTSourceFileCRC;                  //CRC returned of the remote saved file
 uint32_t SDDTSourceFileLength;               //length of file at source\transmitter
 uint32_t SDDTStartmS;                        //used for timeing transfers
-uint16_t SDDTSegment = 0;                      //current segment number
-char SDDTfilenamebuff[Maxfilenamesize];       //global buffer to store current filename
+uint16_t SDDTSegment = 0;                    //current segment number
+char SDDTfilenamebuff[Maxfilenamesize];      //global buffer to store current filename
 uint8_t SDDTheader[16];                      //header array
 uint8_t SDDTdata[245];                       //data/segment array
 uint8_t SDDTflags = 0;                       //Flags byte used to pass status information between nodes
 int SDDTLED = -1;                            //pin number for indicator LED, if -1 then not used
 uint16_t SDDTErrors;                         //used for tracking errors in the transfer process
 
-//Transmitter mode only variables
-uint16_t SDTXNetworkID;                      //this is used to store the 'network' number, receiver must have the same networkID
+uint16_t SDTXNetworkID;                      //this is used to store the 'network' number from packet received, receiver must have the same networkID
 uint16_t SDTXArrayCRC;                       //should contain CRC of data array transmitted
 uint8_t  SDTXPacketL;                        //length of transmitted packet
 uint16_t SDLocalPayloadCRC;                  //for calculating the local data array CRC
@@ -59,16 +70,14 @@ bool SDDTFileTransferComplete;               //bool to flag file transfer comple
 uint32_t SDDTSendmS;                         //used for timing transfers
 float SDDTsendSecs;                          //seconds to transfer a file
 
-
-//Receive mode only variables
 uint16_t SDRXErrors;                         //count of packets received with error
 uint8_t SDRXFlags;                           //SDDTflags byte in header, could be used to control actions in TX and RX
 uint8_t SDRXDataarrayL;                      //length of data array\segment
 bool SDDTFileOpened;                         //bool to flag when file has been opened
+bool SDDTFileClosed;                         //bool to flag when file has been saved to SD
 uint16_t SDDTSegmentNext;                    //next segment expected
 uint16_t SDDTReceivedSegments;               //count of segments received
 uint16_t SDDTSegmentLast;                    //last segment processed
-
 
 //Transmitter mode functions
 uint32_t SDsendFile(char *filename, uint8_t namelength);
@@ -122,18 +131,17 @@ const uint8_t SDOpeningFile = 14;            //bit number of SDDTErrors to set w
 const uint8_t SDendTransfer = 15;            //bit number of SDDTErrors to set when end transfer fails
 
 
-
 //************************************************
 //Transmit mode functions
 //************************************************
 
 uint32_t SDsendFile(char *filename, uint8_t namelength)
 {
-  // This routine allows the file transfer to be run with a function call of sendFile(filename, sizeof(filename));
+  //This routine allows the file transfer to be run with a function call of sendFile(filename, sizeof(filename));
   memcpy(SDDTfilenamebuff, filename, namelength);  //copy the name of file into global filename array for use outside this function
 
   uint8_t localattempts = 0;
-  
+
   SDDTErrors = 0;                                  //clear all error flags
   SDDTDestinationFileCRC = 0;
   SDDTSourceFileCRC = 0;
@@ -146,8 +154,10 @@ uint32_t SDsendFile(char *filename, uint8_t namelength)
     SDNoAckCount = 0;
     SDDTStartmS = millis();
 
+#ifdef ENABLEMONITOR
     Monitorport.print(F("Send file attempt "));
     Monitorport.println(localattempts);
+#endif
 
     //opens the local file to send and sets up transfer parameters
     if (SDstartFileTransfer(filename, namelength))
@@ -247,7 +257,8 @@ uint32_t SDsendFile(char *filename, uint8_t namelength)
         Monitorport.println(F("File CRCs match"));
 #endif
       }
-#endif   //end of ENABLEFILECRC
+#endif
+      //end of ENABLEFILECRC
       SDDTFileTransferComplete = true;
     }
     else
@@ -327,41 +338,38 @@ bool SDstartFileTransfer(char *filename, uint8_t filenamesize)
     localattempts++;
 #ifdef ENABLEMONITOR
     Monitorport.println(F("Send open remote file request"));
-	//Monitorport.print(F("Source file length "));
-	//Monitorport.println(SDDTSourceFileLength);
-	//Monitorport.print(F("Source file CRC 0x"));
-	//Monitorport.println(SDDTSourceFileCRC,HEX);
 #endif
 
     if (SDDTLED >= 0)
     {
       digitalWrite(SDDTLED, HIGH);
     }
+
     SDTXPacketL = LoRa.transmitDT(SDDTheader, DTFileOpenHeaderL, (uint8_t *) filename, filenamesize, NetworkID, TXtimeoutmS, TXpower,  WAIT_TX);
+
     if (SDDTLED >= 0)
     {
       digitalWrite(SDDTLED, LOW);
     }
 
-    SDTXNetworkID = LoRa.getTXNetworkID(SDTXPacketL);     //get the networkID appended to packet
-    SDTXArrayCRC = LoRa.getTXPayloadCRC(SDTXPacketL);     //get the payload CRC appended to packet
-
-
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
+    SDTXNetworkID = LoRa.getTXNetworkID(SDTXPacketL);     //get the networkID appended to packet
+    SDTXArrayCRC = LoRa.getTXPayloadCRC(SDTXPacketL);     //get the payload CRC appended to packet
     Monitorport.print(F("Send attempt "));
     Monitorport.println(localattempts);
     Monitorport.print(F("SDTXNetworkID,0x"));
-    Monitorport.print(SDTXNetworkID, HEX);                   //get the NetworkID of the packet just sent, its placed at the packet end
-    //Monitorport.print(F(",SDTXArrayCRC,0x"));
-    //Monitorport.println(SDTXArrayCRC, HEX);                  //get the CRC of the data array just sent, its placed at the packet end
-    //Monitorport.println();
+    Monitorport.println(SDTXNetworkID, HEX);
+    Monitorport.print(F("SDTXArrayCRC,0x"));
+    Monitorport.println(SDTXArrayCRC, HEX);
 #endif
 #endif
 
-    if (SDTXPacketL == 0)                               //if there has been a send and ack error, SDTXPacketL returns as 0
+    if (SDTXPacketL == 0)                                 //if there has been a send and ack error, SDTXPacketL returns as 0
     {
+#ifdef ENABLEMONITOR
       Monitorport.println(F("Transmit error"));
+#endif
     }
 
     ValidACK = LoRa.waitACKDT(SDDTheader, DTFileOpenHeaderL, ACKopentimeoutmS);
@@ -371,8 +379,7 @@ bool SDstartFileTransfer(char *filename, uint8_t filenamesize)
     {
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
-      Monitorport.println(F("Valid ACK"));
-      //SDprintPacketHex();
+      Monitorport.println(F(" Valid ACK "));
 #endif
 #endif
     }
@@ -381,11 +388,10 @@ bool SDstartFileTransfer(char *filename, uint8_t filenamesize)
       SDNoAckCount++;
 #ifdef ENABLEMONITOR
       Monitorport.println(F("NoACK"));
-      //Monitorport.println(SDNoAckCount);
 #ifdef DEBUG
       SDprintACKdetail();
       Monitorport.print(F("  ACKPacket "));
-      //SDprintPacketHex();
+      SDprintPacketHex();
 #endif
 #endif
       if (SDNoAckCount > NoAckCountLimit)
@@ -415,7 +421,7 @@ bool SDstartFileTransfer(char *filename, uint8_t filenamesize)
 
 bool SDsendSegments()
 {
-  // Start the file transfer at segment 0
+  //Start the file transfer at segment 0
   SDDTSegment = 0;
   SDDTSentSegments = 0;
 
@@ -457,7 +463,7 @@ bool SDsendSegments()
 
 bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
 {
-  // Send file segment as payload in a DT packet
+  //Send file segment as payload in a DT packet
 
   uint8_t ValidACK;
   uint8_t localattempts = 0;
@@ -466,17 +472,17 @@ bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
   SDbuild_DTSegmentHeader(SDDTheader, DTSegmentWriteHeaderL, segmentsize, segnum);
 
 #ifdef ENABLEMONITOR
+
 #ifdef PRINTSEGMENTNUM
   Monitorport.println(segnum);
 #endif
 
-
 #ifdef DEBUG
-  //Monitorport.print(F(" "));
   SDprintheader(SDDTheader, DTSegmentWriteHeaderL);
   Monitorport.print(F(" "));
-  SDprintdata(SDDTdata, segmentsize);                           //print segment size of data array only
+  SDprintdata(SDDTdata, 16);                                  //print first 16 bytes data array
 #endif
+
 #endif
 
   do
@@ -496,7 +502,9 @@ bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
 
     if (SDTXPacketL == 0)                                     //if there has been an error SDTXPacketL returns as 0
     {
+#ifdef ENABLEMONITOR
       Monitorport.println(F("Transmit error"));
+#endif
     }
 
     ValidACK = LoRa.waitACKDT(SDDTheader, DTSegmentWriteHeaderL, ACKsegtimeoutmS);
@@ -542,7 +550,6 @@ bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
         SDprintAckBrief();
-        //SDprintAckReception()
 #endif
 #endif
         return true;
@@ -551,7 +558,9 @@ bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
     else
     {
       SDNoAckCount++;
+#ifdef ENABLEMONITOR
       Monitorport.println(F("NoACK"));
+#endif
 
       if (SDNoAckCount > NoAckCountLimit)
       {
@@ -571,14 +580,13 @@ bool SDsendFileSegment(uint16_t segnum, uint8_t segmentsize)
     return 0;
   }
 
-
   return true;
 }
 
 
 bool SDendFileTransfer(char *filename, uint8_t filenamesize)
 {
-  // End file transfer, close local file first then remote file
+  //End file transfer, close local file first then remote file
 
   uint8_t ValidACK;
   uint8_t localattempts = 0;
@@ -630,7 +638,7 @@ bool SDendFileTransfer(char *filename, uint8_t filenamesize)
     {
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
-      //SDprintPacketHex();
+      SDprintPacketHex();
 #endif
 #endif
     }
@@ -652,7 +660,7 @@ bool SDendFileTransfer(char *filename, uint8_t filenamesize)
 #ifdef DEBUG
       Monitorport.println();
       Monitorport.print(F("  ACKPacket "));
-      //SDprintPacketHex();
+      SDprintPacketHex();
       Monitorport.println();
 #endif
 #endif
@@ -672,7 +680,7 @@ bool SDendFileTransfer(char *filename, uint8_t filenamesize)
 
 void SDbuild_DTFileOpenHeader(uint8_t *header, uint8_t headersize, uint8_t datalength, uint32_t filelength, uint16_t filecrc, uint8_t segsize)
 {
-  // This builds the header buffer for the filename to send
+  //This builds the header buffer for the filename to send
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTFileOpen);         //byte 0, write the packet type
@@ -689,7 +697,7 @@ void SDbuild_DTFileOpenHeader(uint8_t *header, uint8_t headersize, uint8_t datal
 
 void SDbuild_DTSegmentHeader(uint8_t *header, uint8_t headersize, uint8_t datalen, uint16_t segnum)
 {
-  // This builds the header buffer for a segment transmit
+  //This builds the header buffer for a segment transmit
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTSegmentWrite);     //write the packet type
@@ -703,7 +711,7 @@ void SDbuild_DTSegmentHeader(uint8_t *header, uint8_t headersize, uint8_t datale
 
 void SDbuild_DTFileCloseHeader(uint8_t *header, uint8_t headersize, uint8_t datalength, uint32_t filelength, uint16_t filecrc, uint8_t segsize)
 {
-  // This builds the header buffer for the filename passed
+  //This builds the header buffer for the filename passed
 
   beginarrayRW(header, 0);             //start writing to array at location 0
   arrayWriteUint8(DTFileClose);        //byte 0, write the packet type
@@ -798,8 +806,8 @@ void SDprintACKdetail()
 
 void SDprintdata(uint8_t *dataarray, uint8_t arraysize)
 {
-SDUNUSED(dataarray);           //to prevent a compiler warning
-SDUNUSED(arraysize);           //to prevent a compiler warning
+  SDUNUSED(dataarray);           //to prevent a compiler warning
+  SDUNUSED(arraysize);           //to prevent a compiler warning
 #ifdef ENABLEMONITOR
   Monitorport.print(F("DataBytes,"));
   Monitorport.print(arraysize);
@@ -844,7 +852,7 @@ bool SDsendDTInfo()
 
     if (ValidACK > 0)
     {
-      //ack is a valid relaible packet
+      //ack is a valid reliable packet
       SDRXPacketType = SDDTheader[0];
 #ifdef ENABLEMONITOR
       Monitorport.print(F("ACK Packet type 0x"));
@@ -914,12 +922,6 @@ void SDbuild_DTInfoHeader(uint8_t *header, uint8_t headersize, uint8_t datalen)
 }
 
 
-
-
-
-
-
-
 //************************************************
 //Receiver mode  functions
 //************************************************
@@ -927,7 +929,7 @@ void SDbuild_DTInfoHeader(uint8_t *header, uint8_t headersize, uint8_t datalen)
 
 bool SDreceiveaPacketDT()
 {
-  // Receive Data transfer packets
+  //Receive Data transfer packets
 
   SDRXPacketType = 0;
   SDRXPacketL = LoRa.receiveDT(SDDTheader, HeaderSizeMax, (uint8_t *) SDDTdata, DataSizeMax, NetworkID, RXtimeoutmS, WAIT_RX);
@@ -944,8 +946,7 @@ bool SDreceiveaPacketDT()
   if (SDRXPacketL > 0)
   {
     //if the LT.receiveDT() returns a value > 0 for SDRXPacketL then packet was received OK
-    //then only action payload if destinationNode = thisNode
-    SDreadHeaderDT();                      //get the basic header details into global variables SDRXPacketType etc
+    SDreadHeaderDT();                        //get the basic header details into global variables SDRXPacketType etc
     SDprocessPacket(SDRXPacketType);         //process and act on the packet
     if (SDDTLED >= 0)
     {
@@ -957,41 +958,40 @@ bool SDreceiveaPacketDT()
   {
     //if the LoRa.receiveDT() function detects an error RXOK is 0
     uint16_t IRQStatus = LoRa.readIrqStatus();
-    
+
     if (IRQStatus & IRQ_RX_TIMEOUT)
     {
-    #ifdef ENABLEMONITOR
-    Monitorport.println(F("RX Timeout")); 
-    #endif
+#ifdef ENABLEMONITOR
+      Monitorport.println(F("RX Timeout"));
+#endif
     }
     else
-    { 
-    SDRXErrors++;
+    {
+      SDRXErrors++;
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
-    Monitorport.print(F("PacketError"));
-    SDprintPacketDetails();
-    SDprintReliableStatus();
-    Monitorport.println();
+      Monitorport.print(F("PacketError"));
+      SDprintPacketDetails();
+      SDprintReliableStatus();
+      Monitorport.println();
 #endif
 #endif
 
-    if (SDDTLED >= 0)
-    {
-      digitalWrite(SDDTLED, LOW);
+      if (SDDTLED >= 0)
+      {
+        digitalWrite(SDDTLED, LOW);
+      }
+
     }
-    
   }
- }
- return false;
- 
+  return false;
 }
 
 
 void SDreadHeaderDT()
 {
-  // The first 6 bytes of the header contain the important stuff, so load it up
-  // so we can decide what to do next.
+  //The first 6 bytes of the header contain the important stuff, so load it up
+  //so we can decide what to do next.
   beginarrayRW(SDDTheader, 0);                      //start buffer read at location 0
   SDRXPacketType = arrayReadUint8();                //load the packet type
   SDRXFlags = arrayReadUint8();                     //SDDTflags byte
@@ -1003,7 +1003,7 @@ void SDreadHeaderDT()
 
 bool SDprocessPacket(uint8_t packettype)
 {
-  // Decide what to do with an incoming packet
+  //Decide what to do with an incoming packet
 
   if (packettype == DTSegmentWrite)
   {
@@ -1052,8 +1052,8 @@ void SDprintPacketDetails()
 
 bool SDprocessSegmentWrite()
 {
-  // There is a request to write a segment to file on receiver
-  // checks that the sequence of segment writes is correct
+  //There is a request to write a segment to file on receiver
+  //checks that the sequence of segment writes is correct
 
   if (!SDDTFileOpened)
   {
@@ -1085,7 +1085,6 @@ bool SDprocessSegmentWrite()
   if (SDDTSegment == SDDTSegmentNext)
   {
     DTSD_writeSegmentFile(SDDTdata, SDRXDataarrayL);
-    //DTSD_fileFlush();
 
 #ifdef ENABLEMONITOR
 #ifdef PRINTSEGMENTNUM
@@ -1199,27 +1198,38 @@ bool SDprocessSegmentWrite()
 
 bool SDprocessFileOpen(uint8_t *filename, uint8_t filenamesize)
 {
-  // There is a request to open local file on receiver
+  //There is a request to open local file on receiver
 
   SDDTDestinationFileCRC = 0;                          //CRC of complete file received
-  SDDTDestinationFileLength =0;                        //length of file written on the destination\receiver
-  
+  SDDTDestinationFileLength = 0;                       //length of file written on the destination\receiver
+
   beginarrayRW(SDDTheader, 4);                         //start buffer read at location 4
   SDDTSourceFileLength = arrayReadUint32();            //load the file length of the remote file being sent
   SDDTSourceFileCRC = arrayReadUint16();               //load the CRC of the source file being sent
   memset(SDDTfilenamebuff, 0, Maxfilenamesize);        //clear SDDTfilenamebuff to all 0s
   memcpy(SDDTfilenamebuff, filename, filenamesize);    //copy received SDDTdata into SDDTfilenamebuff
+
+#ifdef ENABLEMONITOR
   Monitorport.print((char*) SDDTfilenamebuff);
   Monitorport.print(F(" SD File Open request"));
   Monitorport.println();
+
+#ifdef DEBUG
+  SDTXNetworkID = LoRa.getTXNetworkID(SDRXPacketL);     //get the networkID appended to packet
+  SDTXArrayCRC = LoRa.getTXPayloadCRC(SDRXPacketL);     //get the payload CRC appended to packet
+  Monitorport.print(F("SDTXNetworkID,0x"));
+  Monitorport.println(SDTXNetworkID, HEX);
+  Monitorport.print(F("SDTXArrayCRC,0x"));
+  Monitorport.println(SDTXArrayCRC, HEX);
+#endif
+
   SDprintSourceFileDetails();
 
   if bitRead(SDRXFlags, SDNoFileSave)
   {
-#ifdef ENABLEMONITOR
     Monitorport.println(F("Remote did not save file to SD"));
-#endif
   }
+#endif
 
   if (DTSD_openNewFileWrite(SDDTfilenamebuff))      //open file for write at beginning, delete if it exists
   {
@@ -1244,11 +1254,13 @@ bool SDprocessFileOpen(uint8_t *filename, uint8_t filenamesize)
 
   SDDTStartmS = millis();
   delay(ACKdelaymS);
+
 #ifdef ENABLEMONITOR
 #ifdef DEBUG
   Monitorport.println(F("Sending ACK"));
 #endif
 #endif
+
   SDDTheader[0] = DTFileOpenACK;                    //set the ACK packet type
 
   if (SDDTLED >= 0)
@@ -1275,6 +1287,8 @@ bool SDprocessFileClose()
   Monitorport.println(F(" File close request"));
 #endif
 
+  SDDTFileClosed = false;
+
   if (SDDTFileOpened)                                     //check if file has been opened, close it if it is
   {
     if (SD.exists(SDDTfilenamebuff))                      //check if file exists
@@ -1288,14 +1302,18 @@ bool SDprocessFileClose()
       Monitorport.println();
       Monitorport.println(F("File closed"));
 #endif
+
       SDDTFileOpened = false;
       SDDTDestinationFileLength = DTSD_openFileRead(SDDTfilenamebuff);
+
 #ifdef ENABLEFILECRC
       SDDTDestinationFileCRC = DTSD_fileCRCCCITT(SDDTDestinationFileLength);
 #endif
+
       beginarrayRW(SDDTheader, 4);                       //start writing to array at location 12
       arrayWriteUint32(SDDTDestinationFileLength);       //write file length of file just written just written to ACK header
       arrayWriteUint16(SDDTDestinationFileCRC);          //write CRC of file just written to ACK header
+
 #ifdef ENABLEMONITOR
       SDprintDestinationFileDetails();
 #endif
@@ -1330,6 +1348,7 @@ bool SDprocessFileClose()
   Monitorport.println();
 #endif
 
+  SDDTFileClosed = true;
   return true;
 }
 
@@ -1347,7 +1366,7 @@ void SDprintPacketRSSI()
 
 void SDprintSourceFileDetails()
 {
-  //Monitorport.print(SDDTfilenamebuff);
+
 #ifdef ENABLEMONITOR
   Monitorport.print(F("Source file length is "));
   Monitorport.print(SDDTSourceFileLength);
@@ -1387,8 +1406,10 @@ void SDprintDestinationFileDetails()
     Monitorport.println(F("File CRCs match"));
   }
 #endif
+
 #endif
 }
+
 
 //************************************************
 //Common functions
@@ -1406,8 +1427,8 @@ void SDsetLED(int8_t pinnumber)
 
 void SDprintheader(uint8_t *header, uint8_t headersize)
 {
-SDUNUSED(header);               //to prevent a compiler warning
-SDUNUSED(headersize);           //to prevent a compiler warning
+  SDUNUSED(header);               //to prevent a compiler warning
+  SDUNUSED(headersize);           //to prevent a compiler warning
 
 #ifdef ENABLEMONITOR
   Monitorport.print(F("HeaderBytes,"));
@@ -1420,8 +1441,8 @@ SDUNUSED(headersize);           //to prevent a compiler warning
 
 void printArrayHEX(uint8_t *buff, uint32_t len)
 {
-SDUNUSED(buff);           //to prevent a compiler warning
-SDUNUSED(len);           //to prevent a compiler warning
+  SDUNUSED(buff);           //to prevent a compiler warning
+  SDUNUSED(len);           //to prevent a compiler warning
 
 #ifdef ENABLEMONITOR
   uint8_t index, buffdata;
@@ -1441,12 +1462,12 @@ SDUNUSED(len);           //to prevent a compiler warning
 
 void SDprintReliableStatus()
 {
-  
+
 #ifdef ENABLEMONITOR
-  
+
   uint8_t reliableErrors = LoRa.readReliableErrors();
   uint8_t reliableFlags = LoRa.readReliableFlags();
-  
+
   if (bitRead(reliableErrors, ReliableCRCError))
   {
     Monitorport.print(F(",ReliableCRCError"));
@@ -1480,6 +1501,20 @@ void SDprintReliableStatus()
   if (bitRead(reliableFlags, ReliableACKReceived))
   {
     Monitorport.print(F(",ACKreceived"));
+  }
+#endif
+}
+
+
+void SDprintPacketHex()
+{
+#ifdef ENABLEMONITOR
+  uint8_t packetlen = LoRa.readRXPacketL();
+  Monitorport.print(packetlen);
+  Monitorport.print(F(" bytes > "));
+  if (packetlen > 0)
+  {
+    LoRa.printSXBufferHEX(0, packetlen - 1);
   }
 #endif
 }

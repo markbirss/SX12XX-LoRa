@@ -99,10 +99,6 @@ void setup()
   LoRa.printModemSettings();
   Serial.println();
 
-  Serial.print(F("Initializing SD card..."));
-
-  Serial.println();
-
 #ifdef DISABLEPAYLOADCRC
   LoRa.setReliableConfig(NoReliableCRC);
 #endif
@@ -119,6 +115,6 @@ void setup()
   DTSegmentNext = 0;
   DTFileOpened = false;
 
-  Serial.println(F("SDfile transfer receiver ready"));
+  Serial.println(F("File transfer receiver ready"));
   Serial.println();
 }

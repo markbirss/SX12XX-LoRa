@@ -6,7 +6,8 @@
 // - uses 128 byte packets for low RAM devices
 // - supports batch upload of several files at once
 
-//StuartsProjects - hard coded for serial #2
+//StuartsProjects - hard coded for Serial2
+//080222 - added timeouts
 
 #define X_SOH 0x01
 #define X_STX 0x02
@@ -55,6 +56,7 @@ static uint16_t crc16(const uint8_t *data, uint16_t size)
   return crc;
 }
 
+
 static uint16_t swap16(uint16_t in)
 {
   return (in >> 8) | ((in & 0xff) << 8);
@@ -78,46 +80,53 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
   uint32_t filebytescopied = 0;
   uint32_t startmS;
   uint8_t ackerrors = 0;
-  
+
   File srcFile = SD.open(filename, O_RDONLY);
-  if (srcFile < 0) {
-    Serial.println("open error");
-    return -1;
+  
+  if (srcFile < 0)
+  {
+    Serial.println("Open error");
+    return 0;
   }
 
-  // get the size of the file and convert to an ASCII representation for header packet
   numBytesStillToSend = srcFile.size();
+  
+  if (numBytesStillToSend == 0)
+  {
+  Serial.println("SD file error");
+  return 0;
+  }
+  
+  //convert the size of the file to an ASCII representation for header packet
   sprintf(spfBuff, "%ld", numBytesStillToSend);
 
   // wait here for the receiving device to respond
-  if ( waitForReceiver ) 
+  if ( waitForReceiver )
   {
-    Serial.print("Waiting for receiver ping ...");
- 	while ( Serial2.available() ) Serial2.read();
-    
-	startmS = millis();
-    
-	do 
-	{
+    Serial.print("Waiting for receiver ping ... ");
+    while ( Serial2.available() ) Serial2.read();
+    startmS = millis();
+
+    do
+    {
       if ( Serial2.available() ) answer = Serial2.read();
-    } 
-	//while (answer != 'C');
-	 while ((answer != 'C') && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
+    }
+    while ((answer != 'C') && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
 
     if (answer != 'C')
-  {
-    Serial.println("Timeout starting YModem transfer");
-    return 0;
+    {
+      Serial.println("Timeout starting YModem transfer");
+      return 0;
+    }
+    else
+    {
+      Serial.println("done");
+    }
   }
-  else
-  {
-    Serial.println("done");
-  }
-  
-  }
-  
+
   Serial.print("YModem Sending ");
-  Serial.println(filename);
+  Serial.print(filename);
+  Serial.print("  ");
   Serial.print(spfBuff);
   Serial.println(" bytes");
 
@@ -130,28 +139,21 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
   // insert the file size in bytes as ASCII after the NULL of the filename string
   strcpy( (char *)(yPacket.payload) + strlen(filename) + 1 , spfBuff );
 
-  // DEBUG print out the start of the header
-  //for (int i = 0; i < 20; i++) {
-    //sprintf(spfBuff, "%02X ", yPacket.payload[i]);
-    //Serial.print(spfBuff);
-  //}
-  Serial.println();
-
   // first pass - don't read any file data as it will overwrite the file details packet
   skip_payload = 1;
 
-  while (numBytesStillToSend > 0) 
+  while (numBytesStillToSend > 0)
   {
     doNextBlock = 0;
 
     // if this isn't the 1st pass, then read a block of up to 128 bytes from the file
-    if (skip_payload == 0) 
-	{
+    if (skip_payload == 0)
+    {
       numBytesThisPacket = min(numBytesStillToSend, sizeof(yPacket.payload));
       srcFile.read(yPacket.payload, numBytesThisPacket);
-     
+
       filebytescopied = filebytescopied + numBytesThisPacket;
-	  
+
       if (numBytesThisPacket < sizeof(yPacket.payload)) {
         // pad out the rest of the payload block with 0x1A
         memset(yPacket.payload + numBytesThisPacket, 0x1A, sizeof(yPacket.payload) - numBytesThisPacket);
@@ -165,26 +167,24 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
 
     // send the whole packet to the receiver - will block here
     startmS = millis();
-	Serial2.write( (uint8_t*)&yPacket, sizeof(yPacket));
+    Serial2.write( (uint8_t*)&yPacket, sizeof(yPacket));
 
     // wait for the receiver to send back a response to the packet
-    //while ( !Serial2.available() );
     while ((!Serial2.available()) && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
-	
-	if (!Serial2.available())
+
+    if ( ((uint32_t) (millis() - startmS) >= transfertimeoutmS))
     {
       Serial.println("Timeout waiting YModem response");
       return 0;
     }
-	
-	
-	answer = Serial2.read();
+
+    answer = Serial2.read();
     switch (answer) {
       case X_NAK:
         // something went wrong - send the same packet again?
         Serial.print("N");
         ackerrors++;
-		break;
+        break;
       case X_ACK:
         // got ACK to move to the next block of data
         Serial.print(".");
@@ -194,31 +194,28 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
         // unknown response
         Serial.print("?");
         ackerrors++;
-		break;
+        break;
     }
-	
-	if (ackerrors >= ackerrorlimit)
+
+    if (ackerrors >= ackerrorlimit)
     {
       Serial.println("Ack error limit reached");
       return 0;
     }
-	
 
     // need to handle the 'C' response after the initial file details packet has been sent
     if (skip_payload == 1) {
-      
-	  startmS = millis();
-	  while ((!Serial2.available()) && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
-	  	  //while ( !Serial2.available() );
-      
-      if (!Serial2.available())
+
+      startmS = millis();
+      while ((!Serial2.available()) && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
+
+      if ( ((uint32_t) (millis() - startmS) >= transfertimeoutmS))
       {
         Serial.println("Timeout waiting YModem response");
         return 0;
       }
-  
-	
-	  answer = Serial2.read();
+
+      answer = Serial2.read();
       if (answer == 'C') {
         // good - start sending the data in the next transmission
         skip_payload = 0;
@@ -235,21 +232,19 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
     }
   }
 
-
   // all done - send the end of transmission code
   Serial2.write( X_EOT );
 
   // need to send EOT again for YMODEM
   startmS = millis();
   while ((!Serial2.available()) && ((uint32_t) (millis() - startmS) < transfertimeoutmS));
-  //while ( !Serial2.available() );
-  
-  if (!Serial2.available())
+
+  if ( ((uint32_t) (millis() - startmS) >= transfertimeoutmS))
   {
     Serial.println("Timeout waiting YModem response");
     return 0;
   }
-  
+
   answer = Serial2.read();
   Serial2.write( X_EOT );
 
@@ -262,7 +257,7 @@ static int yModemSend(const char *filename, int waitForReceiver, int batchMode )
     yPacket.crc = swap16(crc16(yPacket.payload, sizeof(yPacket.payload)));
     Serial2.write( (uint8_t*)&yPacket, sizeof(yPacket));
   }
-  Serial.println("done.\n");
+  Serial.println("done");
 
   srcFile.close();
   return filebytescopied;

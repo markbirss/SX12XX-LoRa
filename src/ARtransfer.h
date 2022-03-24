@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 18/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 01/02/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -27,6 +27,7 @@
 //110122 added local function ARprintArrayHEX(uint8_t *buff, uint32_t len)
 //110122 Replace printpacketHEX() with ARprintArrayHEX() which used  LoRa.printSXBufferHEX() and Monitorport.print()
 //180122 preface all variables and functions with AR so that functions can be used with SD transfer functions
+//180122 allow the port for Monitorport debug prints to be changed
 //010222 Added ARsendDTInfo functions
 
 //so that Monitorport prints default to the primary Monitorport port of Monitorport
@@ -70,7 +71,6 @@ uint8_t  ARTXPacketL;                        //length of transmitted packet
 uint16_t ARTXNetworkID;                      //this is used to store the 'network' number, receiver must have the same
 uint16_t ARTXArrayCRC;                       //should contain CRC of data array transmitted
 uint16_t ARDTSentSegments;                   //count of segments sent
-
 
 //Receive mode only variables
 uint16_t ARRXErrors;                         //count of packets received with error
@@ -671,7 +671,6 @@ bool ARendArrayTransfer(char *buff, uint8_t filenamesize)
 #endif
     }
   }
-  //while (ValidACK == 0);
   while ((ValidACK == 0) && (localattempts < SendAttempts)) ;
 
 
@@ -1278,7 +1277,7 @@ bool ARprocessArrayStart(uint8_t *buff, uint8_t filenamesize)
   }
 #endif
   ARDTStartmS = millis();
-  delay(ACKdelaymS);
+  delay(ACKdelaystartendmS);
 
   ARDTheader[0] = DTArrayStartACK;                    //set the ACK packet type
 
@@ -1343,7 +1342,7 @@ bool ARprocessArrayEnd()
     delay(DuplicatedelaymS);
   }
 
-  delay(ACKdelaymS);
+  delay(ACKdelaystartendmS);
   ARDTheader[0] = DTArrayEndACK;
 
   if (ARDTLED >= 0)

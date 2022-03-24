@@ -9,6 +9,9 @@
   Program Operation - This is a test program for the use of a data transfer (DT) packet to send a file
   from the SD card on one Arduino to the SD card on another Arduino, Arduino DUEs were used for the test.
 
+  This program uses routines that do not need to use the DIO0 pin on the LoRa device which is usually used
+  to indicate RXDONE or TXDONE.
+
   DT packets can be used for transfering large amounts of data in a sequence of packets or segments,
   in a reliable and resiliant way. The remote file open request, the segements sent and the remote file close
   will be transmitted until a valid acknowledge comes from the receiver. Use with the matching transmitter

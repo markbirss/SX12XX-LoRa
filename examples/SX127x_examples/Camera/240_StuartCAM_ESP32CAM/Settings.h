@@ -1,12 +1,12 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 19/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 21/03/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
 *******************************************************************************************************/
 
-//updated pinouts for 'ESP32CAM_Long_Range_Wireless_Adapter PCB dated 261121
-//Note transistor driving the White LED on pin 4, or the LED needs to be removed 
+//updated pinouts for 'ESP32CAM_Long_Range_Wireless_Adapter PCB dated 271121
+//Note transistor driving the White LED on pin 4, or the LED needs to be removed
 
 #define NSS 12                //select on LoRa device
 #define NRESET 15             //reset pin on LoRa device
@@ -17,21 +17,21 @@
 
 #define LORA_DEVICE DEVICE_SX1278               //this is the device we are using
 
-
 //*******  Setup LoRa modem parameters here ! ***************
-const uint32_t Frequency = 434000000;           //frequency of transmissions
+const uint32_t Frequency = 434000000;           //frequency of transmissions in hertz
 const uint32_t Offset = 0;                      //offset frequency for calibration purposes
 
 const uint8_t Bandwidth = LORA_BW_500;          //LoRa bandwidth
 const uint8_t SpreadingFactor = LORA_SF7;       //LoRa spreading factor
 const uint8_t CodeRate = LORA_CR_4_5;           //LoRa coding rate
-const uint8_t Optimisation = LDRO_AUTO;         //low data rate optimisation setting
-const int8_t  TXpower = 10;                     //LoRa TX power
+const uint8_t Optimisation = LDRO_AUTO;         //low data rate optimisation setting, normally set to auto
+
+const int8_t TXpower = 10;                      //LoRa transmit power in dBm
 
 const uint32_t TXtimeoutmS = 5000;              //mS to wait for TX to complete
 const uint32_t RXtimeoutmS = 60000;             //mS to wait for receiving a packet
 const uint32_t ACKdelaymS = 0;                  //ms delay after packet actioned and ack sent
-
+const uint32_t ACKdelaystartendmS = 25;         //ms delay before ack sent at array start wrie and end write
 const uint32_t ACKsegtimeoutmS = 75;            //mS to wait for receiving an ACK before re-trying transmit segment
 const uint32_t ACKopentimeoutmS = 500;          //mS to wait for receiving an ACK before re-trying transmit file open
 const uint32_t ACKclosetimeoutmS = 500;         //mS to wait for receiving an ACK before re-trying transmit file close
@@ -49,13 +49,13 @@ const uint8_t SendAttempts = 5;                 //number of attempts carrying ou
 
 const uint8_t HeaderSizeMax = 12;               //max size of header in bytes, minimum size is 7 bytes
 const uint8_t DataSizeMax = 245;                //max size of data array in bytes
-const uint8_t SegmentSize = 245;                //max size of data array in bytes
 const uint16_t NetworkID = 0x3210;              //a unique identifier to go out with packet
 
 const uint16_t SleepTimesecs = 15;              //sleep time in seconds after each TX loop
 const uint32_t uS_TO_S_FACTOR = 1000000;        //Conversion factor for micro seconds to seconds
 const uint8_t PicturesToTake = 1;               //number of pictures to take at each wakeup, only last is sent via LoRa
 const uint32_t PictureDelaymS = 1000;           //delay in mS between pictures
+const uint8_t SegmentSize = 245;                //number of bytes in each segment, 245 is maximum value for LoRa
 
 
 // Pin definition for CAMERA_MODEL_AI_THINKER

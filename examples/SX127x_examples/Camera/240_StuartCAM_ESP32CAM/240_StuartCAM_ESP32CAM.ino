@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 29/01/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 21/03/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -27,7 +27,7 @@
   LoRa radio to another remote Arduino.
 
   This program is for an ESP32CAM board that has an SPI LoRa module set up on the following pins; NSS 12,
-  NRESET 15, SCK 4, MISO 13, MOSI 2, 3.3V VCC and GND. All other pins on the SX127x are not connected.
+  NRESET 15, SCK 4, MISO 13, MOSI 2, 3.3V VCC and GND. All other pins on the SX127X are not connected.
 
   Note that the white LED on pin 4 or the transistor controlling it need to be removed so that the LoRa
   device can properly use pin 4.
@@ -39,7 +39,6 @@
 
   Note that if the camera fails then the program will attempt to send, and wait for the acknowledge, for a
   DTinfo packet reporting the fail.
-
 
   Serial monitor baud rate is set at 115200
 *******************************************************************************************************/
@@ -68,8 +67,8 @@ RTC_DATA_ATTR uint16_t sleepcount = 0;
 RTC_DATA_ATTR uint16_t pictureNumber = 0;        //number of picture taken, set to 0 on reset
 
 #include "esp_camera.h"
-camera_config_t config;                         //stores the camera configuration parameters
-#include <ARtransferIRQ.h>                      //library of array transfer functions
+camera_config_t config;                          //stores the camera configuration parameters
+#include <ARtransferIRQ.h>                       //library of array transfer functions
 
 bool SDOK;
 
@@ -193,6 +192,7 @@ bool setupLoRaDevice()
   }
 
   LoRa.setupLoRa(Frequency, Offset, SpreadingFactor, Bandwidth, CodeRate, Optimisation);
+
   Serial.println();
   return true;
 }

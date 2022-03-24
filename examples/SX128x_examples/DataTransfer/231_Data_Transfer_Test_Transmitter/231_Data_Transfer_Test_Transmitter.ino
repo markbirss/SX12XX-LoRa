@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 06/11/21
+  Programs for Arduino - Copyright of the author Stuart Robinson - 12/03/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -27,12 +27,7 @@
   'Data transfer packet definitions.md' in the \SX128X_examples\DataTransfer\ folder.
 
   The transfer can be carried out using LoRa packets, max segment size (defined by DTSegmentSize) is 245 bytes
-  for LORa an 117 bytes for FLRC.
-
-  Comment out one of the two following lines in setup() to select LoRa or FLRC;
-
-  LoRa.setupLoRa(Frequency, Offset, SpreadingFactor, Bandwidth, CodeRate);
-  LoRa.setupFLRC(Frequency, Offset, BandwidthBitRate, CodingRate, BT, Syncword);
+  for LoRa.
 
   Serial monitor baud rate is set at 115200.
 *******************************************************************************************************/
@@ -41,19 +36,20 @@
 
 #include <SX128XLT.h>
 #include <ProgramLT_Definitions.h>
-#include "DTSettings.h"                      //LoRa or FLRC settings etc.
+#include "DTSettings.h"                      //LoRa settings etc.
 #include <arrayRW.h>
 
 SX128XLT LoRa;                               //create an SX128XLT library instance called LoRa
 
-#include "DTLibrarySIM.h"
+#define USELORA                              //enable this define to use LoRa packets
+//#define USEFLRC                            //enable this define to use FLRC packets
 
-
-//#define USELORA                            //enable this define to use LoRa packets
-#define USEFLRC                              //enable this define to use FLRC packets
+#define PRINTSEGMENTNUM                      //enable this define to print segment numbers 
 
 //#define DEBUG
 //#define DISABLEPAYLOADCRC                  //enable this define if you want to disable payload CRC checking
+
+#include "DTLibrarySIM.h"
 
 char DTFileName[] = "/Simulate.JPG";         //file name to simulate sending
 
@@ -202,6 +198,6 @@ void setup()
 
   DTFileTransferComplete = false;
 
-  Serial.println(F("SDfile transfer ready"));
+  Serial.println(F("File transfer ready"));
   Serial.println();
 }

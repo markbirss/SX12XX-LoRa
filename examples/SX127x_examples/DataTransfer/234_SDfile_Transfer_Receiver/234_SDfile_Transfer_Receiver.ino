@@ -43,11 +43,12 @@ SX127XLT LoRa;                              //create an SX127XLT library instanc
 
 #define ENABLEMONITOR                       //enable monitor prints
 #define PRINTSEGMENTNUM
-#define ENABLEFILECRC                        //enable this define to uses and show file CRCs
-//#define DISABLEPAYLOADCRC                  //enable this define if you want to disable payload CRC checking
+#define ENABLEFILECRC                       //enable this define to use and show file CRCs
+//#define DISABLEPAYLOADCRC                 //enable this define if you want to disable payload CRC checking
+//#define DEBUG 
 
-#include <DTSDlibrary.h>                     //library of SD functions
-#include <SDtransfer.h>                      //library of data transfer functions
+#include <DTSDlibrary.h>                    //library of SD functions
+#include <SDtransfer.h>                     //library of data transfer functions
 
 
 void loop()

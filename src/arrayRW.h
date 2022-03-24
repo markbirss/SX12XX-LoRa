@@ -4,8 +4,8 @@
   Original published 06/05/21
 */
 
-//To Do
-
+//Changes
+//February 2022, endarrayRW() returns last location written in array
 
 uint32_t _arraylcn;
 uint8_t *_arrayaddress;
@@ -22,10 +22,11 @@ void beginarrayRW(uint8_t *buff, uint32_t lcn)
 
 uint8_t endarrayRW()
 {
-  //_arraylcn will have incremented by 1 at every write to the array, so to return the last location 
+  //_arraylcn will have incremented by 1 at every write to the array, so to return the last location
   //written we need to subtract 1 from _arraylcn
   return _arraylcn - 1;
 }
+
 
 void printarrayHEX(uint8_t *buff, uint32_t len)
 {
@@ -53,7 +54,6 @@ void printArrayLocation(uint8_t num)
 
 
 //RW uint8_t **************************************
-
 void arrayWriteUint8(uint8_t buffdata)
 {
   _arrayaddress[_arraylcn++] = buffdata;
@@ -248,9 +248,6 @@ void arrayReadByteArray(uint8_t *buff, uint8_t len)
   }
 }
 //*************************************************
-
-
-
 
 
 

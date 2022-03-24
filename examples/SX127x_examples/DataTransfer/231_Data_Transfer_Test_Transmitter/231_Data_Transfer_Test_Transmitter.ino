@@ -212,6 +212,6 @@ void setup()
 
   DTFileTransferComplete = false;
 
-  Serial.println(F("SDfile transfer ready"));
+  Serial.println(F("File transfer ready"));
   Serial.println();
 }

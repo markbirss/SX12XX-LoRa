@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 09/11/21
+  Programs for Arduino - Copyright of the author Stuart Robinson - 12/03/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -40,13 +40,15 @@
 
 SX128XLT LoRa;                                //create an SX128XLT library instance called LoRa
 
-#include "DTLibrarySIM.h"
+#define USELORA                               //enable this define to use LoRa packets
+//#define USEFLRC                             //enable this define to use FLRC packets
 
-//#define USELORA                             //enable this define to use LoRa packets
-#define USEFLRC                               //enable this define to use FLRC packets
+#define PRINTSEGMENTNUM                       //enable this define to print segment numbers
 
 //#define DEBUG
 //#define DISABLEPAYLOADCRC                   //enable this define if you want to disable payload CRC checking
+
+#include "DTLibrarySIM.h"
 
 
 void loop()
@@ -103,13 +105,10 @@ void setup()
   Serial.println(F("Using FLRC packets"));
 #endif
 
+
   LoRa.printOperatingSettings();
   Serial.println();
   LoRa.printModemSettings();
-  Serial.println();
-
-  Serial.print(F("Initializing SD card..."));
-
   Serial.println();
 
 #ifdef DISABLEPAYLOADCRC
@@ -128,6 +127,6 @@ void setup()
   DTSegmentNext = 0;
   DTFileOpened = false;
 
-  Serial.println(F("SDfile transfer receiver ready"));
+  Serial.println(F("File transfer receiver ready"));
   Serial.println();
 }

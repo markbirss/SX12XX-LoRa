@@ -52,8 +52,8 @@ SX127XLT LoRa;                               //create an SX127XLT library instan
 
 //choice of files to send
 //char FileName[] = "/$50SATL.JPG";          //file length 63091 bytes, file CRC 0x59CE
-char FileName[] = "/$50SATS.JPG";        //file length 6880 bytes, file CRC 0x0281
-//char FileName[] = "/$50SATT.JPG";        //file length 1068 bytes, file CRC 0x6A02
+char FileName[] = "/$50SATS.JPG";            //file length 6880 bytes, file CRC 0x0281
+//char FileName[] = "/$50SATT.JPG";          //file length 1068 bytes, file CRC 0x6A02
 
 
 void loop()

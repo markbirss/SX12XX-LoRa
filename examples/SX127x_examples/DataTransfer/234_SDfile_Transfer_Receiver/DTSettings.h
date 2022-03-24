@@ -40,7 +40,7 @@ const uint32_t PacketDelaymS = 1000;            //mS delay between transmitted p
 
 const uint8_t HeaderSizeMax = 12;               //max size of header in bytes, minimum size is 7 bytes
 const uint8_t DataSizeMax = 245;                //max size of data array in bytes
-const uint8_t Maxfilenamesize = 32;              //size of DTfilename buffer
+const uint8_t Maxfilenamesize = 32;             //size of DTfilename buffer
 
 const uint16_t NetworkID = 0x3210;              //a unique identifier to go out with packet
 const uint8_t SendAttempts = 10;                //number of attempts sending a packet or attempting a process before a restart of transfer

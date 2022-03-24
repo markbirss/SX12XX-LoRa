@@ -1,14 +1,17 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 03/02/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 20/03/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
 *******************************************************************************************************/
 
 /*******************************************************************************************************
-  Program Operation - This is a receiver program for an ESP32CAM used with the ESP32CAM Long Range Wireless
-  Adapter Board that will recive pictures sent from another ESP32CAM that is using program
-  3_ESP32CAM_Transmit_Picture. The received pictures are saved to the ESP32CAMs SD card.
+  Program Operation -  This is a receiver program for an ESP32CAM board that has an SPI LoRa module set up
+  on the following pins; NSS 12, NRESET 15, SCK 4, MISO 13, MOSI 2, 3.3V VCC and GND. All other pins on the
+  SX127X are not connected. The received pictures are saved to the ESP32CAMs SD card.
+
+  Note that the white LED on pin 4 or the transistor controlling it need to be removed so that the LoRa
+  device can properly use pin 4.
 
   Serial monitor baud rate is set at 115200.
 *******************************************************************************************************/
@@ -46,9 +49,14 @@ void loop()
   setupLoRaDevice();
 
   //if there is a successful array transfer the returned length > 0
-  arraylength = LocalARreceiveArray(PSRAMptr, sizeof(ARDTarraysize), ReceiveTimeoutmS);
+  //arraylength = LocalARreceiveArray(PSRAMptr, sizeof(ARDTarraysize), ReceiveTimeoutmS);
+
+  arraylength = ARreceiveArray(PSRAMptr, sizeof(ARDTarraysize), ReceiveTimeoutmS);
 
   SPI.end();
+
+  digitalWrite(NSS, HIGH);
+  digitalWrite(NRESET, HIGH);
 
   if (arraylength)
   {
@@ -58,7 +66,9 @@ void loop()
     {
       SDOK = true;
       Serial.println("SD Card OK");
-      Serial.println(F("Save picture to SD card"));
+      Serial.print(ARDTfilenamebuff);
+      Serial.println(F(" Save picture to SD card"));
+
       fs::FS &fs = SD_MMC;                            //save picture to microSD card
       File file = fs.open(ARDTfilenamebuff, FILE_WRITE);
       if (!file)
@@ -95,189 +105,6 @@ void loop()
 }
 
 
-uint32_t LocalARreceiveArray(uint8_t *ptrarray, uint32_t length, uint32_t receivetimeout)
-{
-  //returns 0 if no ARDTArrayEnded set, returns length of array if received
-  uint32_t startmS = millis();
-
-  ptrARreceivearray = ptrarray;                        //set global pointer to array pointer passed
-  ARArrayLength = length;
-  ARDTArrayTimeout = false;
-  ARDTArrayEnded = false;
-  ARDTDestinationArrayLength = 0;
-
-  do
-  {
-    if (LocalARreceivePacketDT())
-    {
-      startmS = millis();
-    }
-
-    if (ARDTArrayEnded)                                    //has the end array transfer been received ?
-    {
-      return ARDTDestinationArrayLength;
-    }
-  }
-  while (((uint32_t) (millis() - startmS) < receivetimeout ));
-
-
-  if (ARDTArrayEnded)                                    //has the end array transfer been received ?
-  {
-    return ARDTDestinationArrayLength;
-  }
-  else
-  {
-    ARDTArrayTimeout = true;
-    return 0;
-  }
-
-}
-
-
-bool LocalARreceivePacketDT()
-{
-  //Receive data transfer packets
-
-  ARRXPacketType = 0;
-  ARRXPacketL = LoRa.receiveDTIRQ(ARDTheader, HeaderSizeMax, (uint8_t *) ARDTdata, DataSizeMax, NetworkID, RXtimeoutmS, WAIT_RX);
-
-  if (ARDTLED >= 0)
-  {
-    digitalWrite(ARDTLED, HIGH);
-  }
-
-#ifdef ENABLEMONITOR
-#ifdef DEBUG
-  ARprintSeconds();
-#endif
-#endif
-  if (ARRXPacketL > 0)
-  {
-    //if the LoRa.receiveDTIRQ() returns a value > 0 for ARRXPacketL then packet was received OK
-    //then only action payload if destinationNode = thisNode
-    ARreadHeaderDT();                             //get the basic header details into global variables ARRXPacketType etc
-    LocalARprocessPacket(ARRXPacketType);         //process and act on the packet
-    if (ARDTLED >= 0)
-    {
-      digitalWrite(ARDTLED, LOW);
-    }
-    return true;
-  }
-  else
-  {
-    //if the LoRa.receiveDT() function detects an error RXOK is 0
-
-    uint16_t IRQStatus = LoRa.readIrqStatus();
-
-    if (IRQStatus & IRQ_RX_TIMEOUT)
-    {
-      Monitorport.println(F("RX Timeout"));
-    }
-    else
-    {
-      ARRXErrors++;
-
-#ifdef ENABLEMONITOR
-      Monitorport.print(F("PacketError"));
-      ARprintPacketDetails();
-      ARprintReliableStatus();
-      Monitorport.print(F("IRQreg,0x"));
-      Monitorport.println(LoRa.readIrqStatus(), HEX);
-      Monitorport.println();
-#endif
-    }
-
-    if (ARDTLED >= 0)
-    {
-      digitalWrite(ARDTLED, LOW);
-    }
-    return false;
-  }
-}
-
-
-bool LocalARprocessPacket(uint8_t packettype)
-{
-  //Decide what to do with an incoming packet
-
-  if (packettype == DTSegmentWrite)
-  {
-    ARprocessSegmentWrite();
-    return true;
-  }
-
-  if (packettype == DTArrayStart)
-  {
-    ARprocessArrayStart(ARDTdata, ARRXDataarrayL);       //ARDTdata contains the filename
-    return true;
-  }
-
-  if (packettype == DTArrayEnd)
-  {
-    ARprocessArrayEnd();
-    return true;
-  }
-
-  if (packettype == DTInfo)
-  {
-    LocalARprocessDTInfo();
-    return true;
-  }
-  return true;
-}
-
-
-bool LocalARprocessDTInfo()
-{
-  // There is a info packet from transmitter
-
-  ARRXFlags = ARDTheader[1];                          //read flags byte
-
-#ifdef ENABLEMONITOR
-  Monitorport.print(F("DTInfo packet received, flags byte 0x"));
-  Monitorport.println(ARRXFlags, HEX);
-#endif
-
-  if bitRead(ARRXFlags, ARNoFileSave)
-  {
-#ifdef ENABLEMONITOR
-    Monitorport.println();
-    Monitorport.println(F("******************************"));
-    Monitorport.println(F("Remote - No image saved to SD"));
-    Monitorport.println(F("******************************"));
-    Monitorport.println();
-#endif
-  }
-
-  if bitRead(ARRXFlags, ARNoCamera)
-  {
-#ifdef ENABLEMONITOR
-    Monitorport.println();
-    Monitorport.println(F("*********************"));
-    Monitorport.println(F("Remote camera failed"));
-    Monitorport.println(F("*********************"));
-    Monitorport.println();
-#endif
-  }
-
-  ARDTheader[0] = DTInfoACK;                          //set ACK packet type
-  delay(ACKdelaymS);
-
-  if (ARDTLED >= 0)
-  {
-    digitalWrite(ARDTLED, HIGH);
-  }
-
-  LoRa.sendACKDTIRQ(ARDTheader, DTInfoHeaderL, TXpower);
-
-  if (ARDTLED >= 0)
-  {
-    digitalWrite(ARDTLED, LOW);
-  }
-  return true;
-}
-
-
 bool setupLoRaDevice()
 {
   SPI.begin(SCK, MISO, MOSI, NSS);
@@ -293,7 +120,10 @@ bool setupLoRaDevice()
   }
 
   LoRa.setupLoRa(Frequency, Offset, SpreadingFactor, Bandwidth, CodeRate, Optimisation);
+
+#ifdef DISABLEPAYLOADCRC
   LoRa.setReliableConfig(NoReliableCRC);
+#endif
 
   if (LoRa.getReliableConfig(NoReliableCRC))
   {
@@ -354,7 +184,7 @@ void setup()
   digitalWrite(NSS, HIGH);
   pinMode(NSS, OUTPUT);                          //disable LoRa device for now
 
-  Serial.begin(115200, SERIAL_8N1, RXD2, TXD2);  //debug port, format is Serial.begin(baud-rate, protocol, RX pin, TX pin);
+  Serial.begin(115200);  
   Serial.println();
   Serial.println(__FILE__);
 
