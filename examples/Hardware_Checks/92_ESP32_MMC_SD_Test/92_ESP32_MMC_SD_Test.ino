@@ -1,5 +1,5 @@
 /*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 09/04/22
+  Programs for Arduino - Copyright of the author Stuart Robinson - 07/04/22
 
   This program is supplied as is, it is up to the user of the program to decide if the program is
   suitable for the intended purpose and free from errors.
@@ -7,8 +7,8 @@
 
 /*******************************************************************************************************
   Program Operation - This test program has been written to check that a connected SD card adapter, Micro
-  or standard, is functional. The code was tested on an Atmel ATMega328P and ATMega1284P and running the
-  SD card in SPI mode. For this test it is assumed there are no other SPI devices on the SPI bus. 
+  or standard, is functional. The code is for an ESP32 running the SD card in MMC mode. Tested on a 
+  NodeMCU ESP32. 
 
   The program creates a file called LOGXXXX.TXT, where XXXX is a number that increases every time the
   program is restarted. The program opens the file and writes a line like this to the file;
@@ -20,13 +20,29 @@
   directory listing allows you to keep track of the increasing size of the logFile. Problems with reading
   or writing to the SD card should result in an ERROR message on the IDE serial monitor.
 
+  Connect the SD card to the following pins:
+
+  SD Card | ESP32
+  CMD       15   (MOSI for SPI mode)
+  VSS       GND
+  VDD       3.3V
+  CLK       14   (SCK for SPI mode)
+  VSS       GND
+  D0        2    (MISO for SPI mode) (add 1K pull up after flashing)
+
+  Note that GPIO2 may need a 1K pullup resistor added after flashing or the card will fail to initialise.
+
+  If you get unreliable results, try adding more input_pullup lines for pins 4,12,13,15.
+
+  See here for more information;
+
+  https://www.reddit.com/r/esp32/comments/d71es9/a_breakdown_of_my_experience_trying_to_talk_to_an/
+
   Serial monitor baud rate is set at 115200
 *******************************************************************************************************/
 
-#include <SPI.h>
-#include <SD.h>
 
-#define SDCS 4                                 //SD card select for SPI 
+#include <SD_MMC.h>
 
 char filename[] = "/LOG0000.TXT";               //filename used as base for creating root, 0000 replaced with numbers
 uint16_t linenumber = 0;
@@ -43,7 +59,7 @@ void loop()
   Serial.print(linenumber);
   Serial.println(" Hello World!");
 
-  logFile = SD.open(filename, FILE_WRITE);
+  logFile = SD_MMC.open(filename, FILE_APPEND);
   logFile.print("#");
   logFile.print(linenumber);
   logFile.println(" Hello World!");
@@ -51,7 +67,7 @@ void loop()
   dumpFile(filename);
   Serial.println();
 
-  logFile = SD.open("/");
+  logFile = SD_MMC.open("/");
   logFile.rewindDirectory();
   printDirectory(logFile, 0);
 
@@ -94,24 +110,23 @@ void printDirectory(File dir, int numTabs)
 }
 
 
-bool dumpFile(char *buff)
+bool dumpFile(char *buf)
 {
   Serial.print("Print file ");
 
-  if (SD.exists(buff))
+  if (SD_MMC.exists(buf))
   {
-    Serial.println(buff);
+    Serial.println(buf);
   }
   else
   {
     Serial.print("ERROR ");
-    Serial.print(buff);
-    Serial.println(" not found - program halted");
-    while (1);
-    //return false;
+    Serial.print(buf);
+    Serial.println(" not found");
+    return false;
   }
 
-  logFile = SD.open(buff);
+  logFile = SD_MMC.open(buf);
   logFile.seek(0);
 
   if (logFile)                                    //if the file is available, read from it
@@ -123,15 +138,7 @@ bool dumpFile(char *buff)
     logFile.close();
     return true;
   }
-  else
-  {
-  Serial.print("ERROR ");
-  Serial.println(" dumping file ");
-  Serial.print(buff);
-  Serial.println(" - program halted");
-  while (1);
-  //return false;
-  }
+  return false;
 }
 
 
@@ -150,15 +157,15 @@ uint8_t setupSDLOG(char *buff)
     buff[6] = ((index % 100) / 10) + '0';
     buff[7] = index % 10 + '0' ;
 
-    if (! SD.exists(filename))
+    if (! SD_MMC.exists(filename))
     {
       // only open a new file if it doesn't exist
-      dir = SD.open(buff, FILE_WRITE);
+      dir = SD_MMC.open(buff, FILE_WRITE);
       break;
     }
   }
 
-  dir.rewindDirectory();                          //stops SD.exists() command causing issues with directory listings
+  dir.rewindDirectory();                          //stops SD_MMC.exists() command causing issues with directory listings
   dir.close();
 
   if (!dir)
@@ -172,15 +179,15 @@ uint8_t setupSDLOG(char *buff)
 
 void setup()
 {
+  pinMode(2, INPUT_PULLUP);
+
   Serial.begin(115200);
   Serial.println();
   Serial.println();
   Serial.print(__FILE__);
   Serial.println();
 
-  SPI.begin();
-
-  if (!SD.begin(SDCS))
+  if (!SD_MMC.begin("/sdcard", true))
   {
     Serial.println();
     Serial.println("ERROR Card Mount Failed - program halted");
@@ -190,6 +197,6 @@ void setup()
 
   Serial.println("Card Mount OK");
 
-  logFile = SD.open("/");
+  logFile = SD_MMC.open("/");
   setupSDLOG(filename);
 }
