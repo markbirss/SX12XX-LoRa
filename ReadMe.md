@@ -1,6 +1,6 @@
 # SX12XX Library
 
-This Arduino library supports the SX126x, SX127x and SX128x Semtech LoRa devices. 
+This Arduino library supports the SX126x, SX127x and SX128x Semtech LoRa devices.
 
 Included is a wide range of functional example programs for using sensors, GPSs as trackers, displays, remote control and camera image transfer for Arducam or ESP32CAM. Other examples demonstrate transmitting FM tones, playing tunes, or sending FSK RTTY data. Link testing programs enable device performance and sensitivity to be measured. 
 
@@ -17,6 +17,10 @@ The Semtech LoRa devices are used to manufacture a range of LoRa modules sold by
 <input type="image" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
 <img alt="" border="0" src="https://www.paypal.com/en_GB/i/scr/pixel.gif" width="1" height="1" />
 </form>
+
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4EMBJU5C2UGNS)
+
 
 ## Supported Devices 
 
