@@ -22,9 +22,13 @@ The Semtech LoRa devices are used to manufacture a range of LoRa modules sold by
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4EMBJU5C2UGNS)
 
 
-## Supported Devices 
+## Supported Devices
+
+The library does support the following Semtech LoRa devices; 
 
 **SX1262,SX1262,SX1268,SX1272,SX1276,SX1277,SX1278,SX1279,SX1280,SX1281**
+
+However, its up to module manufactures to connect the Semtech LoRa devices up as they see fit. There are several options and additional control pins that a module manufacturer can add, so just because a module uses for example an SX1262 it does not mean the library code can support that particular modules combination of pins. See the section 'Considerations for pin usage' below. 
 
 ## Objectives
 
@@ -78,9 +82,9 @@ The library supports the SPI based LoRa modules and these all require that the S
 
 Of the LoRa devices DIO pins the library in standard form only uses DIO0 (SX127X) and DIO1 (SX126X and SX128X). The pin definitions for DIO1 and DIO2 (SX127x) and DIO2 and DIO3 (SX126x and SX128x) are not currently used by the library or examples so can be defined as -1 meaning they will not be configured. There are 'IRQ' library functions that do not need the use of the DIO0 (SX127X) or DIO1 (SX126X and SX128X) pins. See examples such as 3_LoRa_TransmitterIRQ.
 
-The Dorji DRF1262 and DRF1268 modules has a SW pin which must be configured, it provides power to the antenna switch used on these modules. Some SX126x modules may have RX or TX enable pins, these are currently not supported by the library. 
+The Dorji DRF1262 and DRF1268 modules have an SW pin which must be connected, it provides power to the antenna switch used on these modules. Some SX126x modules may have RX or TX enable pins. Whilst there is code in the SX126X library that matches the tested RX TX switching of the SX128X library there were no SX126X devices using RX and TX switching at the time of writing, so these functions are currently not supported by the library as they have not been tested.  
 
-Some of the SX128x modules do have RX or TX enable pins, such as the Ebyte modules, these are supported by the library, and you need to define the pins RX_EN and TX_EN pins used, otherwise leave unused by defining them as -1.  
+Some of the SX128x modules have RX or TX enable pins, such as the Ebyte modules, these functions have been tested and are supported by the library. You need to define the pins RX_EN and TX_EN pins used, otherwise leave unused by defining them as -1.  
 
 ## Testing of library and examples
 
